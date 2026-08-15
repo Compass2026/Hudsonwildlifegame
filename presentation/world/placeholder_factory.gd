@@ -84,43 +84,68 @@ static func build_animal(species: SpeciesData) -> Node3D:
 	root.add_child(tail_node)
 	return root
 
-## A track mark on the ground. Intentionally low-contrast: sign should be found,
-## not flagged. Size follows the real measurement so a big print looks big.
-static func build_track_marker(record: EvidenceRecord) -> Node3D:
-	var root := Node3D.new()
-	var width_cm: float = float(record.truth.get("width_cm", 6.0))
-	var size: float = clampf(width_cm / 100.0, 0.04, 0.16)
-
+## Track marks are drawn in bulk by a MultiMesh, so the factory supplies the
+## shared mesh and material rather than per-track nodes. One material for every
+## track in the world: creating one per track exhausts WebGL resources and
+## silently kills 3D rendering in the browser.
+##
+## Per-track variation rides on the MultiMesh instance data instead — size and
+## heading in the transform, print clarity in the instance colour.
+static func track_mesh() -> Mesh:
 	var quad := QuadMesh.new()
-	quad.size = Vector2(size, size * 1.15)
+	quad.size = Vector2(1.0, 1.15)   # unit mesh; real size comes from instance scale
+	return quad
 
+static func track_material() -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
-	var depth: float = record.effective_quality()
-	mat.albedo_color = Color(0.10, 0.08, 0.06, clampf(0.20 + depth * 0.55, 0.12, 0.8))
+	mat.albedo_color = Color.WHITE
+	mat.vertex_color_use_as_albedo = true   # lets each instance carry its own tint
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	mat.no_depth_test = false
+	return mat
 
-	var mi := mesh_node(quad, mat, Vector3(0, 0.02, 0))
-	mi.rotation_degrees = Vector3(-90, rad_to_deg(record.heading), 0)
-	root.add_child(mi)
-	return root
+## How a single print looks: darker and more opaque the better it registered.
+## Intentionally low contrast — sign should be found, not flagged.
+static func track_instance_color(record: EvidenceRecord) -> Color:
+	var depth: float = record.effective_quality()
+	return Color(0.10, 0.08, 0.06, clampf(0.20 + depth * 0.55, 0.12, 0.8))
+
+static func track_instance_size(record: EvidenceRecord) -> float:
+	var width_cm: float = float(record.truth.get("width_cm", 6.0))
+	return clampf(width_cm / 100.0, 0.04, 0.16)
+
+# Sign types that stay rare get ordinary nodes, but still share one material
+# each. Materials are per-kind, never per-instance.
+static var _hair_mat: StandardMaterial3D
+static var _scat_mat: StandardMaterial3D
+static var _highlight_mat: StandardMaterial3D
+
+## Shared, because accessibility highlights can be numerous too.
+static func highlight_material() -> StandardMaterial3D:
+	if _highlight_mat == null:
+		_highlight_mat = material(Color(0.95, 0.85, 0.35))
+		_highlight_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	return _highlight_mat
 
 static func build_hair_marker(_record: EvidenceRecord) -> Node3D:
+	if _hair_mat == null:
+		_hair_mat = material(Color(0.55, 0.50, 0.44))
 	var root := Node3D.new()
 	var tuft := CylinderMesh.new()
 	tuft.top_radius = 0.0
 	tuft.bottom_radius = 0.02
 	tuft.height = 0.09
-	var node := mesh_node(tuft, material(Color(0.55, 0.50, 0.44)), Vector3(0, 0.06, 0))
+	var node := mesh_node(tuft, _hair_mat, Vector3(0, 0.06, 0))
 	node.rotation_degrees = Vector3(20, 0, 15)
 	root.add_child(node)
 	return root
 
-static func build_scat_marker(record: EvidenceRecord) -> Node3D:
+static func build_scat_marker(_record: EvidenceRecord) -> Node3D:
+	if _scat_mat == null:
+		_scat_mat = material(Color(0.18, 0.14, 0.10))
 	var root := Node3D.new()
-	var s := SphereMesh.new()
-	s.radius = 0.035
-	s.height = 0.07
-	root.add_child(mesh_node(s, material(Color(0.18, 0.14, 0.10)), Vector3(0, 0.035, 0)))
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.035
+	sphere.height = 0.07
+	root.add_child(mesh_node(sphere, _scat_mat, Vector3(0, 0.035, 0)))
 	return root

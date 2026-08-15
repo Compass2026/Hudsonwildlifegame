@@ -117,7 +117,7 @@ func _on_notice(text: String, kind: String) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.x = 620
 	_notice_box.add_child(label)
-	if _notice_box.get_child_count() > 6:
+	if _notice_box.get_child_count() > 4:
 		_notice_box.get_child(0).queue_free()
 	var tween := create_tween()
 	tween.tween_interval(NOTICE_LIFETIME)
