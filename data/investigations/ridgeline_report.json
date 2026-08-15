@@ -1,0 +1,45 @@
+{
+  "id": "ridgeline_report",
+  "title": "The Ridgeline Report",
+  "region": "Upper Hudson headwaters, southwestern Adirondacks, New York",
+  "provenance": "real",
+  "reported_by": "Volunteer trail steward, Beaver Meadow lean-to",
+
+  "briefing": "A trail steward checking a snow-melt drainage above camp reported 'a big cat, grey, with black ear tufts and huge feet' crossing the old logging track at first light. She had no camera. She was certain it was not a bobcat.\n\nThat report on its own is worth very little. Bobcats are common here and are routinely reported as lynx, especially at low light and at distance, and tracks in soft ground spread and read larger than the animal that made them.\n\nYour job is not to confirm her sighting. Your job is to find out what is actually using that drainage, and to be honest about how far the evidence goes.\n\nScenario note: the setting and the report are written for this game. The species information, conservation status and tracking characteristics in your field guide are drawn from published science. Nothing you conclude in the field here is a real observation record.",
+
+  "candidate_species": ["canada_lynx", "bobcat"],
+
+  "objectives": [
+    {
+      "type": "discover_evidence",
+      "evidence_type": "track",
+      "count": 1,
+      "text": "Find sign along the drainage. Move slowly — you will walk past it otherwise."
+    },
+    {
+      "type": "examine_evidence",
+      "count": 3,
+      "text": "Examine at least three separate pieces of sign. One track is not a trail."
+    },
+    {
+      "type": "photograph",
+      "min_quality": 0.45,
+      "text": "Photograph the animal well enough that someone else could check your work."
+    },
+    {
+      "type": "evidence_strength",
+      "min": 1.6,
+      "text": "Build a case strong enough to be worth filing."
+    },
+    {
+      "type": "return_to",
+      "position": [0.0, 0.0, 0.0],
+      "radius": 12.0,
+      "text": "Return to the research camp."
+    },
+    {
+      "type": "file_report",
+      "text": "File your determination. Inconclusive is a legitimate result."
+    }
+  ]
+}

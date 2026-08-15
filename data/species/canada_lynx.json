@@ -1,0 +1,59 @@
+{
+  "id": "canada_lynx",
+  "common_name": "Canada Lynx",
+  "scientific_name": "Lynx canadensis",
+  "provenance": "real",
+
+  "conservation_status": "IUCN Red List: Least Concern (global). Listed as Threatened under the U.S. Endangered Species Act for the contiguous United States Distinct Population Segment.",
+  "regional_status": "New York: extirpated as a breeding population. A reintroduction in the Adirondacks in the late 1980s did not establish. Occasional dispersing individuals from Canada and northern New England are documented in the northeast.",
+  "rarity": "very_rare",
+
+  "habitat": "Boreal and montane conifer and mixed forest with deep, persistent, fluffy snowpack and dense regenerating understory that supports snowshoe hare. Strongly associated with elevation and snow depth in the southern part of its range.",
+  "diet": "Snowshoe hare specialist. Hare can make up the large majority of the winter diet; also red squirrel, grouse, and small rodents when hare numbers crash. Lynx populations in the north track the roughly ten-year hare cycle.",
+  "behavior_notes": "Solitary and secretive. Mostly crepuscular and nocturnal. Hunts by sit-and-wait ambush and short stalks in dense cover rather than long pursuit. Large home ranges; young animals disperse extremely long distances, which is how individuals turn up far south of established populations.",
+  "identification_notes": "Long black ear tufts, a short black-tipped tail (black all the way around the tip), prominent facial ruff, and conspicuously long hind legs giving a stooped, high-rumped profile. Feet are enormous for the animal's size and heavily furred. Compared with bobcat: taller at the shoulder, greyer, larger-footed, shorter-tailed in appearance, with a tail tip black above and below rather than only above.",
+  "threats": "Loss and fragmentation of boreal forest, reduced snowpack and duration under climate warming, which also allows bobcat and coyote to expand into lynx range as competitors, incidental capture in traps set for other species, and road mortality during dispersal.",
+  "historical_notes": "Historically present across northern New York and northern New England. Harvest records and museum specimens document lynx in the Adirondacks into the nineteenth century, after which records become sporadic. A resident breeding population has been confirmed in northeastern Vermont in recent decades.",
+  "sources": [
+    "IUCN Red List assessment for Lynx canadensis",
+    "U.S. Fish and Wildlife Service, Canada Lynx Contiguous U.S. DPS listing and recovery documents",
+    "New York State Department of Environmental Conservation species profile: Canada lynx",
+    "Vermont Fish and Wildlife Department, Canada lynx status reports",
+    "Elbroch, M. — Mammal Tracks and Sign: A Guide to North American Species"
+  ],
+
+  "evidence_standard": 2.6,
+  "encounter_prior": 0.06,
+
+  "track": {
+    "length_cm": [8.0, 11.5],
+    "width_cm": [8.0, 11.5],
+    "stride_cm": [40.0, 70.0],
+    "straddle_cm": [18.0, 26.0],
+    "toe_count": 4,
+    "claw_marks": false,
+    "gait": "direct register walk, often in its own older trail",
+    "clarity_bias": -0.28,
+    "field_notes": "Very large and round for the size of the animal. Dense foot fur usually blurs the toe and pad outlines, so a lynx print often reads as a soft, indistinct circle rather than a crisp cat track. In soft snow the foot spreads even wider. Size is the strongest single clue; a clean, sharply defined print of this size is unusual and worth doubting."
+  },
+
+  "behavior": {
+    "walk_speed": 1.3,
+    "run_speed": 8.0,
+    "home_range_radius": 90.0,
+    "detect_distance": 55.0,
+    "flush_distance": 28.0,
+    "wariness": 0.92,
+    "track_interval_m": 0.55,
+    "scat_chance_per_hour": 0.5,
+    "hair_chance_per_hour": 0.4,
+    "active_windows": [[17.0, 23.5], [3.0, 8.0]]
+  },
+
+  "presentation": {
+    "placeholder_color": [0.62, 0.60, 0.54],
+    "body_length_m": 0.95,
+    "shoulder_height_m": 0.60,
+    "visual_scene": ""
+  }
+}

@@ -1,0 +1,123 @@
+# Hudson Wildlife
+
+A wildlife exploration, tracking, research and conservation game built in
+Godot 4 with GDScript.
+
+You are a field researcher. You go into wild places to find out what is actually
+there — by reading ground, following sign, and being honest about how far your
+evidence goes.
+
+**Milestone 1 (this build): The Ridgeline Report.** A small headwater drainage
+in the southwestern Adirondacks. A volunteer reports a large grey cat with black
+ear tufts. Bobcats are common here and are routinely reported as lynx. Find out
+what is using that drainage.
+
+---
+
+## Running it
+
+1. Install **Godot 4.3 or newer** (standard build, not .NET) from
+   <https://godotengine.org/download>.
+2. `git clone` this repository.
+3. Open the Godot project manager → **Import** → select `project.godot` → **Import & Edit**.
+4. Press **F5**.
+
+First import takes a moment while Godot builds its `.godot/` cache. That folder
+is gitignored.
+
+Verified on Godot 4.3 stable (Linux).
+
+### Headless tests
+
+```bash
+godot --headless --path . res://tests/test_runner.tscn   # gameplay rules
+godot --headless --path . res://tests/smoke_test.tscn    # boots the real scene
+```
+
+Both exit non-zero on failure. `test_runner` runs the whole evidence and
+identification chain with no graphics at all — that is the architectural
+guarantee, not just a convenience. `smoke_test` boots the actual game scene
+headless and checks the world answers gameplay queries, the animals are laying
+down sign, and nothing has been handed to the player for free.
+
+---
+
+## Controls
+
+| Key | Action |
+|---|---|
+| `WASD` | Move |
+| `Shift` | Move slowly (you notice much more) |
+| `C` | Crouch |
+| `E` | Examine the sign in front of you |
+| `F` | Raise / stow the field camera |
+| Mouse wheel | Zoom (camera raised) |
+| Left mouse | Shutter |
+| `Tab` | Field notebook |
+| `Esc` | Release the mouse |
+
+---
+
+## How to play the first investigation
+
+Read the briefing when the notebook opens, then close it with `Tab`.
+
+Walk north from camp and **follow the creek**. Tracks only register where the
+ground takes them — creek mud holds a print, ledge rock and leaf litter mostly
+do not. Move at walking pace or slower; sprinting past a trail is a real way to
+miss it.
+
+When you find sign, press `E`. You will get measurements, an error margin, and a
+list of what could not be read. You will not be told the species. Open the
+notebook's **Field guide** tab and compare: lynx prints run 8–11.5 cm wide,
+bobcat 4–6 cm, and a soft-ground bobcat print spreads and reads larger than it
+is. That ambiguity is the game.
+
+Photograph the animal if you can get one — distance, light, cover and your own
+movement all show up in the image. Then return to camp and file.
+
+**Inconclusive is a legitimate result and the game treats it as one.** Claiming
+a lynx on thin evidence gets you told, in detail, why it does not hold.
+
+---
+
+## Layout
+
+```
+core/          Event bus, settings, shared enums
+data/          Schemas + content (species and investigations as JSON)
+systems/       Gameplay logic — no graphics, no assets, no screen space
+presentation/  World, player, UI, placeholder art — all replaceable
+scenes/        Composition root
+tests/         Headless system tests
+docs/          Architecture notes
+```
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the layers are kept
+apart and where future systems attach.
+
+---
+
+## Real, historical, speculative
+
+The game mixes real conservation science with invented scenarios, so every piece
+of content declares which it is, and the interface shows it.
+
+- **REAL** — species facts, conservation status, tracking characteristics and
+  regional history are drawn from published sources, listed in the field guide.
+- **HISTORICAL** — a scenario set at a stated past date.
+- **SPECULATIVE** — invented. Labelled `FICTIONAL / SPECULATIVE` wherever it
+  appears, including in the verdict text.
+
+Nothing you conclude in this game is a scientific record. The game says so
+itself when you file a report.
+
+---
+
+## Adding a species
+
+Create `data/species/your_species.json`, copy the shape of
+`data/species/bobcat.json`, and it is in the game — field guide entry,
+identification scoring, evidence standard, AI behaviour and a placeholder body,
+with no code changes. Add art later by pointing `presentation.visual_scene` at a
+scene file.

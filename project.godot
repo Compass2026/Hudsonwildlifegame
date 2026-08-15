@@ -1,0 +1,48 @@
+; Engine configuration file.
+; Hudson Wildlife — wildlife exploration, tracking and conservation research game.
+;
+; Input actions are registered at runtime by core/input_actions.gd so that this
+; file stays readable and mergeable in git. See docs/ARCHITECTURE.md.
+
+config_version=5
+
+[application]
+
+config/name="Hudson Wildlife"
+config/description="A wildlife field-research game: explore, observe, track, identify, document."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.3")
+
+[autoload]
+
+EventBus="*res://core/event_bus.gd"
+Settings="*res://core/game_settings.gd"
+GameClock="*res://systems/time/game_clock.gd"
+SpeciesDB="*res://systems/database/species_database.gd"
+EnvironmentSystem="*res://systems/environment/environment_system.gd"
+EvidenceSystem="*res://systems/evidence/evidence_system.gd"
+IdentificationSystem="*res://systems/identification/identification_system.gd"
+InvestigationSystem="*res://systems/investigation/investigation_system.gd"
+FieldNotebook="*res://systems/notebook/field_notebook.gd"
+
+[display]
+
+window/size/viewport_width=1600
+window/size/viewport_height=900
+
+[editor]
+
+export/convert_text_resources_to_binary=false
+
+[filesystem]
+
+import/blender/enabled=false
+
+[physics]
+
+3d/default_gravity=18.0
+
+[rendering]
+
+textures/vram_compression/import_etc2_astc=true
+anti_aliasing/quality/msaa_3d=2

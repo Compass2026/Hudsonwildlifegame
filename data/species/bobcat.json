@@ -1,0 +1,57 @@
+{
+  "id": "bobcat",
+  "common_name": "Bobcat",
+  "scientific_name": "Lynx rufus",
+  "provenance": "real",
+
+  "conservation_status": "IUCN Red List: Least Concern. Populations are generally stable or increasing across much of the range.",
+  "regional_status": "New York: common and widespread, with a regulated harvest season in much of the state. Range has expanded northward and eastward in recent decades.",
+  "rarity": "common",
+
+  "habitat": "Highly adaptable. Mixed forest, swamps, rocky ledges, farmland edges and second growth. Uses rock ledges and blowdowns for denning and daybeds. Tolerates human-modified landscapes far better than lynx.",
+  "diet": "Generalist carnivore. Cottontail and hare, squirrels, mice and voles, birds, and occasionally deer, especially fawns or winter-weakened animals.",
+  "behavior_notes": "Solitary and territorial. Crepuscular with activity through the night, and often active by day in winter. Hunts by stalking and short rushes along edges, ledges and travel corridors, and reuses the same routes repeatedly.",
+  "identification_notes": "Smaller and tawnier than lynx, with a spotted or streaked coat, shorter ear tufts, and a barred tail whose tip is black on the upper side only and white beneath. Legs are proportionally shorter and feet much smaller. In the field the two are most reliably separated by foot size, tail tip, and leg length rather than by coat colour.",
+  "threats": "Locally, vehicle collisions and habitat conversion. Not currently of conservation concern in this region, though bobcat expansion into former lynx range is itself a factor in lynx decline.",
+  "historical_notes": "Long established throughout the region. Bounty and harvest records show continuous presence where lynx records lapsed, which is exactly why historical reports of large cats in this area are difficult to interpret.",
+  "sources": [
+    "IUCN Red List assessment for Lynx rufus",
+    "New York State Department of Environmental Conservation, bobcat management plan and species profile",
+    "Elbroch, M. — Mammal Tracks and Sign: A Guide to North American Species"
+  ],
+
+  "evidence_standard": 0.8,
+  "encounter_prior": 1.0,
+
+  "track": {
+    "length_cm": [4.0, 6.0],
+    "width_cm": [4.0, 6.0],
+    "stride_cm": [25.0, 45.0],
+    "straddle_cm": [10.0, 17.0],
+    "toe_count": 4,
+    "claw_marks": false,
+    "gait": "direct register walk",
+    "clarity_bias": 0.05,
+    "field_notes": "Round, asymmetric, four toes, no claw marks. Usually crisper than a lynx print and roughly half the width. On soft or melting ground a bobcat track can spread and read larger than it is, which is the single most common source of false lynx reports."
+  },
+
+  "behavior": {
+    "walk_speed": 1.4,
+    "run_speed": 8.5,
+    "home_range_radius": 70.0,
+    "detect_distance": 45.0,
+    "flush_distance": 20.0,
+    "wariness": 0.8,
+    "track_interval_m": 0.38,
+    "scat_chance_per_hour": 0.55,
+    "hair_chance_per_hour": 0.35,
+    "active_windows": [[16.0, 23.0], [4.0, 9.0]]
+  },
+
+  "presentation": {
+    "placeholder_color": [0.66, 0.47, 0.29],
+    "body_length_m": 0.80,
+    "shoulder_height_m": 0.45,
+    "visual_scene": ""
+  }
+}
