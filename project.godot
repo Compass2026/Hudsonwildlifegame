@@ -44,5 +44,8 @@ import/blender/enabled=false
 
 [rendering]
 
+; The browser build runs on WebGL 2, which means the Compatibility renderer.
+; Desktop keeps Forward+. Nothing in gameplay depends on either.
+renderer/rendering_method.web="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2

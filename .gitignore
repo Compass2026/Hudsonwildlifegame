@@ -2,10 +2,10 @@
 .godot/
 .import/
 export.cfg
-export_presets.cfg
 *.translation
 
 # Builds
+# local export output; the deployed copy is committed under web/
 build/
 bin/
 *.tmp

@@ -42,6 +42,25 @@ down sign, and nothing has been handed to the player for free.
 
 ---
 
+### Browser build
+
+A Web export is committed under `web/` and deployed to Vercel, so you can try
+the prototype without installing anything. It is a convenience, not the target
+platform — desktop loads faster, runs better, and gives you a console.
+
+To rebuild it after changing the game:
+
+```bash
+godot --headless --path . --export-release "Web" build/web/index.html
+cp build/web/* web/
+```
+
+The export preset is committed (`export_presets.cfg`). It uses the
+no-threads template, so the build needs no cross-origin isolation headers and
+will run on any static host. Note that the browser build uses the Compatibility
+renderer (WebGL 2) while desktop uses Forward+, so lighting looks slightly
+different; no gameplay system is aware of the difference.
+
 ## Controls
 
 | Key | Action |
