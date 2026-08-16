@@ -70,7 +70,9 @@ func _leave_track(pos: Vector3, speed: float) -> void:
 	if condition < 0.08:
 		return  # the ground took nothing; there is genuinely no sign here
 
+	_left_foot = not _left_foot
 	var truth := individual_truth.duplicate()
+	truth["left_foot"] = _left_foot
 	# Per-print variation: soft ground spreads a print, hard ground shrinks it.
 	var spread: float = 1.0 + (sub.retention - 0.5) * 0.16
 	truth["length_cm"] = float(truth["length_cm"]) * spread
@@ -100,6 +102,7 @@ func _leave_hair(pos: Vector3) -> void:
 		animal_uid)
 
 var _last_heading := 0.0
+var _left_foot := false
 
 func set_heading(h: float) -> void:
 	_last_heading = h

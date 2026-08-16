@@ -18,35 +18,52 @@ extends Node3D
 
 const TRACK_CAPACITY := 1200
 
-var _tracks: MultiMeshInstance3D
-var _slot_of: Dictionary = {}       ## evidence uid -> multimesh instance index
-var _free_slots: Array[int] = []
+## One MultiMesh per print SHAPE. A species whose claws register gets a
+## different print, so it gets its own bucket; everything with the same foot
+## shares one. Still one draw call each, however many prints there are.
+var _track_pools: Dictionary = {}   ## shape key -> {node, free: Array[int]}
+var _slot_of: Dictionary = {}       ## evidence uid -> [shape key, instance index]
+var _track_material: StandardMaterial3D
 var _markers: Dictionary = {}       ## evidence uid -> Node3D, for non-track sign
 
 func _ready() -> void:
-	_build_track_multimesh()
+	_track_material = PlaceholderFactory.track_material()
 	EventBus.evidence_created.connect(_on_created)
 	EventBus.evidence_expired.connect(_on_expired)
 	EventBus.evidence_discovered.connect(_on_discovered)
 	sync_existing()
 
-func _build_track_multimesh() -> void:
+func _shape_key(record: EvidenceRecord) -> String:
+	return "%d%s" % [int(record.truth.get("toe_count", 4)),
+		"c" if bool(record.truth.get("claw_marks", false)) else ""]
+
+func _pool_for(record: EvidenceRecord) -> Dictionary:
+	var key := _shape_key(record)
+	if _track_pools.has(key):
+		return _track_pools[key]
+
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = PlaceholderFactory.track_mesh()
+	mm.mesh = PlaceholderFactory.track_mesh_for(
+		int(record.truth.get("toe_count", 4)),
+		bool(record.truth.get("claw_marks", false)))
 	mm.instance_count = TRACK_CAPACITY
 
-	_tracks = MultiMeshInstance3D.new()
-	_tracks.name = "TrackMarks"
-	_tracks.multimesh = mm
-	_tracks.material_override = PlaceholderFactory.track_material()
-	add_child(_tracks)
+	var node := MultiMeshInstance3D.new()
+	node.name = "TrackMarks_%s" % key
+	node.multimesh = mm
+	node.material_override = _track_material
+	add_child(node)
 
-	# Every slot starts collapsed to nothing and is claimed as tracks appear.
+	var free: Array[int] = []
 	for i in range(TRACK_CAPACITY - 1, -1, -1):
 		mm.set_instance_transform(i, Transform3D().scaled(Vector3.ZERO))
-		_free_slots.append(i)
+		free.append(i)
+
+	var pool := {"node": node, "free": free}
+	_track_pools[key] = pool
+	return pool
 
 ## Draw sign that already existed before this node was added — e.g. everything
 ## laid down while the world's history was fast-forwarded at startup.
@@ -75,24 +92,38 @@ func _on_created(r: EvidenceRecord) -> void:
 	_markers[r.uid] = marker
 
 func _add_track(r: EvidenceRecord) -> void:
-	if _free_slots.is_empty():
+	var pool := _pool_for(r)
+	var free: Array = pool["free"]
+	if free.is_empty():
 		return   # more tracks than we can draw; the record still exists in gameplay
-	var slot: int = _free_slots.pop_back()
-	_slot_of[r.uid] = slot
+	var slot: int = free.pop_back()
+	_slot_of[r.uid] = [_shape_key(r), slot]
 
 	var size := PlaceholderFactory.track_instance_size(r)
-	# Lie the quad flat on the ground, turn it to face the animal's direction of
-	# travel, and scale it to the real width of the print.
-	var basis := Basis.from_euler(Vector3(-PI * 0.5, r.heading, 0.0)).scaled(Vector3(size, size, size))
-	_tracks.multimesh.set_instance_transform(slot,
-		Transform3D(basis, r.position + Vector3.UP * 0.02))
-	_tracks.multimesh.set_instance_color(slot, PlaceholderFactory.track_instance_color(r))
+	# Lie the print ON the ground rather than on a flat plane through it: tilted
+	# to the slope, turned to the animal's direction of travel, and mirrored for
+	# a left foot so a trail alternates the way a walking animal's does.
+	var up := EnvironmentSystem.normal_at(r.position)
+	var forward := Vector3(sin(r.heading), 0.0, cos(r.heading))
+	var right := forward.cross(up).normalized()
+	if right.length_squared() < 0.5:
+		right = Vector3.RIGHT
+	forward = up.cross(right).normalized()
+	var mirror := -1.0 if bool(r.truth.get("left_foot", false)) else 1.0
+
+	var basis := Basis(right * size * mirror, up * size, forward * size)
+	var node: MultiMeshInstance3D = pool["node"]
+	node.multimesh.set_instance_transform(slot,
+		Transform3D(basis, r.position + up * 0.02))
+	node.multimesh.set_instance_color(slot, PlaceholderFactory.track_instance_color(r))
 
 func _on_expired(r: EvidenceRecord) -> void:
 	if _slot_of.has(r.uid):
-		var slot: int = _slot_of[r.uid]
-		_tracks.multimesh.set_instance_transform(slot, Transform3D().scaled(Vector3.ZERO))
-		_free_slots.append(slot)
+		var entry: Array = _slot_of[r.uid]
+		var pool: Dictionary = _track_pools[entry[0]]
+		var node: MultiMeshInstance3D = pool["node"]
+		node.multimesh.set_instance_transform(entry[1], Transform3D().scaled(Vector3.ZERO))
+		pool["free"].append(entry[1])
 		_slot_of.erase(r.uid)
 		return
 	var m: Node3D = _markers.get(r.uid, null)

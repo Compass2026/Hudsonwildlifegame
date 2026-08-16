@@ -12,6 +12,7 @@ extends Node
 ##     func height_at(x: float, z: float) -> float
 ##     func substrate_at(pos: Vector3) -> Substrate
 ##     func world_extent() -> float
+##     func normal_at(pos: Vector3) -> Vector3   (optional; defaults to straight up)
 
 var _provider: Object = null
 
@@ -32,6 +33,13 @@ func height_at(x: float, z: float) -> float:
 
 func ground_position(pos: Vector3) -> Vector3:
 	return Vector3(pos.x, height_at(pos.x, pos.z), pos.z)
+
+## Which way the ground faces here. Sign lies ON the ground, so it has to be
+## tilted to match it; animals will want this too when they walk slopes.
+func normal_at(pos: Vector3) -> Vector3:
+	if _provider != null and _provider.has_method("normal_at"):
+		return _provider.normal_at(pos)
+	return Vector3.UP
 
 func substrate_at(pos: Vector3) -> Substrate:
 	if _provider != null and _provider.has_method("substrate_at"):

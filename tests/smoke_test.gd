@@ -21,8 +21,14 @@ func _ready() -> void:
 		EnvironmentSystem.has_provider())
 	_check("ground height varies across the map",
 		absf(EnvironmentSystem.height_at(0, 0) - EnvironmentSystem.height_at(40, 80)) > 1.0)
-	_check("the creek bed is mud and the uplands are not",
-		EnvironmentSystem.substrate_at(Vector3(0, 0, 0)).kind == Substrate.Kind.MUD)
+	var creek_point := Vector3(main.world.creek_x(-20.0), 0.0, -20.0)
+	_check("the creek bed is mud",
+		EnvironmentSystem.substrate_at(creek_point).kind == Substrate.Kind.MUD)
+	_check("camp is not pitched in the creek",
+		EnvironmentSystem.substrate_at(Vector3.ZERO).kind != Substrate.Kind.MUD)
+	_check("camp sits on level ground",
+		absf(EnvironmentSystem.height_at(-4.0, 3.0)
+			- EnvironmentSystem.height_at(4.0, -3.0)) < 0.35)
 
 	var animals := get_tree().get_nodes_in_group(&"animal")
 	_check("three animals were placed", animals.size() == 3)

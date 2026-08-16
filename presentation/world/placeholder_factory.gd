@@ -91,17 +91,72 @@ static func build_animal(species: SpeciesData) -> Node3D:
 ##
 ## Per-track variation rides on the MultiMesh instance data instead — size and
 ## heading in the transform, print clarity in the instance colour.
-static func track_mesh() -> Mesh:
-	var quad := QuadMesh.new()
-	quad.size = Vector2(1.0, 1.15)   # unit mesh; real size comes from instance scale
-	return quad
+## An actual print rather than a smudge: a heel pad with toe pads arranged
+## ahead of it, built flat in XZ so the ground normal can tilt it.
+##
+## The shape is generated from the same data the identification system reads —
+## toe count and whether claws register — so a species whose claws show gets a
+## print with claw marks without anyone writing a second track renderer. Pads
+## fade at their edges, which is what stops a print reading as a sticker.
+##
+## Unit space: roughly 1.0 wide by 1.3 long. Instance scale turns that into the
+## real width of the animal's foot.
+static func track_mesh_for(toe_count: int, claws: bool) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+	# Heel pad. Wide, set back, slightly lobed at the rear — the biggest single
+	# feature of a cat print and the one that survives poor ground longest.
+	_add_pad(st, Vector2(0.0, -0.34), Vector2(0.34, 0.24), 14)
+	_add_pad(st, Vector2(-0.16, -0.46), Vector2(0.13, 0.10), 10)
+	_add_pad(st, Vector2(0.16, -0.46), Vector2(0.13, 0.10), 10)
+
+	# Toes, fanned ahead of the heel. Real prints are asymmetric; the leading
+	# toe sits proud of the others, which is how you tell left from right.
+	var count: int = maxi(toe_count, 1)
+	var spread := deg_to_rad(58.0)
+	for i in count:
+		var t := 0.0 if count == 1 else (float(i) / float(count - 1)) * 2.0 - 1.0
+		var angle := t * spread
+		var reach := 0.42 - absf(t) * 0.06
+		var centre := Vector2(sin(angle) * reach * 1.15, cos(angle) * reach - 0.02)
+		centre.x += 0.03            # the asymmetry that makes it a left or a right
+		var pad := Vector2(0.15, 0.18) * (1.0 - absf(t) * 0.16)
+		_add_pad(st, centre, pad, 12)
+
+		if claws:
+			var claw_at := centre + Vector2(sin(angle), cos(angle)) * 0.17
+			_add_pad(st, claw_at, Vector2(0.045, 0.09), 6)
+
+	st.generate_normals()
+	return st.commit()
+
+## A flat elliptical pad, opaque at the centre and fading out at the rim, so
+## pads blend into the ground instead of ending on a hard edge.
+static func _add_pad(st: SurfaceTool, centre: Vector2, radius: Vector2, segments: int) -> void:
+	var centre_col := Color(1, 1, 1, 1)
+	var rim_col := Color(1, 1, 1, 0.0)
+	for i in segments:
+		var a0 := TAU * float(i) / float(segments)
+		var a1 := TAU * float(i + 1) / float(segments)
+		var p0 := centre + Vector2(cos(a0) * radius.x, sin(a0) * radius.y)
+		var p1 := centre + Vector2(cos(a1) * radius.x, sin(a1) * radius.y)
+		# Wound so the face points up (+Y).
+		st.set_color(centre_col)
+		st.add_vertex(Vector3(centre.x, 0.0, -centre.y))
+		st.set_color(rim_col)
+		st.add_vertex(Vector3(p1.x, 0.0, -p1.y))
+		st.set_color(rim_col)
+		st.add_vertex(Vector3(p0.x, 0.0, -p0.y))
 
 static func track_material() -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color.WHITE
-	mat.vertex_color_use_as_albedo = true   # lets each instance carry its own tint
+	mat.vertex_color_use_as_albedo = true   # instance tint x the pads' soft edges
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Left feet are drawn mirrored, which flips the winding order.
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat
 
 ## How a single print looks: darker and more opaque the better it registered.

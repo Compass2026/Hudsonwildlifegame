@@ -14,6 +14,10 @@ extends Node3D
 const EXTENT := 110.0        ## half-width of the playable area, metres
 const CELL := 2.0            ## terrain mesh resolution
 const CAMP_RADIUS := 14.0
+const CREEK_OFFSET := 17.0   ## metres east of camp
+const CAMP_CENTRE := Vector2(0.0, 0.0)
+const CAMP_FLAT_RADIUS := 8.0
+const CAMP_BLEND := 9.0
 const TREE_COUNT := 300
 const SHRUB_COUNT := 1500
 const ROCK_COUNT := 260
@@ -21,6 +25,7 @@ const ROCK_COUNT := 260
 var _noise := FastNoiseLite.new()
 var _detail := FastNoiseLite.new()
 var _sun: DirectionalLight3D
+var _camp_level := 0.0
 
 func _ready() -> void:
 	_noise.seed = 20260815
@@ -28,6 +33,10 @@ func _ready() -> void:
 	_noise.fractal_octaves = 4
 	_detail.seed = 991
 	_detail.frequency = 0.05
+
+	# Level for the camp bench, taken from the unflattened terrain so the bench
+	# joins the hillside instead of standing proud of it.
+	_camp_level = _raw_height(CAMP_CENTRE.x, CAMP_CENTRE.y)
 
 	EnvironmentSystem.register_provider(self)
 
@@ -47,19 +56,38 @@ func world_extent() -> float:
 	return EXTENT
 
 ## Analytic ground height. Gameplay asks this; it never touches the mesh.
+##
+## Camp sits on a level bench blended into the hillside: nobody pitches a tent
+## on a slope, and the terrain has to agree with that or the tent floats.
 func height_at(x: float, z: float) -> float:
+	var raw := _raw_height(x, z)
+	var d := Vector2(x - CAMP_CENTRE.x, z - CAMP_CENTRE.y).length()
+	var blend := clampf(1.0 - (d - CAMP_FLAT_RADIUS) / CAMP_BLEND, 0.0, 1.0)
+	blend = blend * blend * (3.0 - 2.0 * blend)      # smoothstep, so it eases in
+	return lerpf(raw, _camp_level, blend)
+
+func _raw_height(x: float, z: float) -> float:
 	var rolling := _noise.get_noise_2d(x, z) * 14.0
 	var slope := (z + EXTENT) / (EXTENT * 2.0) * 10.0   ## valley climbs to the north
 	var d := absf(x - creek_x(z))
 	var carve := clampf(1.0 - d / 16.0, 0.0, 1.0)
 	return rolling + slope - carve * carve * 7.0
 
-## The drainage meanders; following it is the point.
+## The drainage meanders; following it is the point. Offset so it runs PAST
+## camp rather than through it — you camp near water, not in it.
 func creek_x(z: float) -> float:
-	return sin(z * 0.028) * 26.0 + sin(z * 0.011) * 12.0
+	return sin(z * 0.028) * 26.0 + sin(z * 0.011) * 12.0 + CREEK_OFFSET
 
 func creek_distance(pos: Vector3) -> float:
 	return absf(pos.x - creek_x(pos.z))
+
+## Sampled from the height field rather than the mesh, so it agrees with
+## height_at() exactly.
+func normal_at(pos: Vector3) -> Vector3:
+	const D := 0.6
+	var hx := height_at(pos.x + D, pos.z) - height_at(pos.x - D, pos.z)
+	var hz := height_at(pos.x, pos.z + D) - height_at(pos.x, pos.z - D)
+	return Vector3(-hx, 2.0 * D, -hz).normalized()
 
 func substrate_at(pos: Vector3) -> Substrate:
 	var d := creek_distance(pos)
@@ -395,29 +423,9 @@ func _scatter_multimesh(node_name: String, mesh: Mesh, mat: Material, count: int
 	node.material_override = mat
 	add_child(node)
 
+## The camp is its own builder — it is a place, not terrain.
 func _build_camp() -> void:
-	var camp := Node3D.new()
-	camp.name = "ResearchCamp"
-	camp.position = Vector3(0, height_at(0, 0), 0)
-	add_child(camp)
-
-	var tent_mat := PlaceholderFactory.material(Color(0.55, 0.45, 0.25))
-	var box := BoxMesh.new()
-	box.size = Vector3(3.0, 2.2, 4.0)
-	camp.add_child(PlaceholderFactory.mesh_node(box, tent_mat, Vector3(3, 1.1, 0)))
-
-	var table := BoxMesh.new()
-	table.size = Vector3(1.4, 0.1, 2.2)
-	camp.add_child(PlaceholderFactory.mesh_node(table,
-		PlaceholderFactory.material(Color(0.35, 0.3, 0.28)), Vector3(-2.5, 0.9, 0)))
-
-	# A visible marker so the player can find camp again from the ridge.
-	var pole := CylinderMesh.new()
-	pole.top_radius = 0.06
-	pole.bottom_radius = 0.06
-	pole.height = 6.0
-	camp.add_child(PlaceholderFactory.mesh_node(pole,
-		PlaceholderFactory.material(Color(0.85, 0.35, 0.2)), Vector3(0, 3.0, 0)))
+	CampBuilder.build(self, Vector3.ZERO)
 
 func _build_sky() -> void:
 	var env := WorldEnvironment.new()

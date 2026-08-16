@@ -158,8 +158,11 @@ func _on_notice(text: String, kind: String) -> void:
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.custom_minimum_size.x = 620
 	_notice_box.add_child(label)
-	if _notice_box.get_child_count() > 4:
-		_notice_box.get_child(0).queue_free()
+	while _notice_box.get_child_count() > 4:
+		var oldest := _notice_box.get_child(0)
+		_notice_box.remove_child(oldest)   # queue_free alone is deferred, so a
+		oldest.queue_free()                # burst of finds could stack up
+
 	var tween := create_tween()
 	tween.tween_interval(NOTICE_LIFETIME)
 	tween.tween_property(label, "modulate:a", 0.0, 1.2)
