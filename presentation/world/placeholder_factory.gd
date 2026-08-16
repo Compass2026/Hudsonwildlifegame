@@ -164,15 +164,19 @@ static func track_material() -> StandardMaterial3D:
 ## you are standing over it.
 static func track_instance_color(record: EvidenceRecord) -> Color:
 	var depth: float = record.effective_quality()
-	return Color(0.09, 0.07, 0.05, clampf(0.30 + depth * 0.62, 0.20, 0.92))
+	return Color(0.08, 0.065, 0.05, clampf(0.34 + depth * 0.62, 0.24, 0.95))
 
 ## Drawn larger than life on purpose.
 ##
 ## A lynx foot is 8-11 cm across. At standing eye height that is a few pixels,
 ## and a print you cannot see is not a puzzle, it is a pixel hunt. The number
 ## the player MEASURES is always the true one — this scales the drawing only,
-## so identification is unaffected.
-const TRACK_LEGIBILITY := 1.8
+## so identification, the field guide ranges and the lynx-vs-bobcat comparison
+## are all unaffected.
+##
+## Turn this down if spotting sign ever starts feeling too easy; it is the one
+## dial for that, and it costs nothing to change.
+const TRACK_LEGIBILITY := 3.0
 
 static func track_instance_size(record: EvidenceRecord) -> float:
 	var width_cm: float = float(record.truth.get("width_cm", 6.0))
