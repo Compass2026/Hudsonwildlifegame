@@ -39,6 +39,9 @@ func _ready() -> void:
 		12, Color(0.7, 0.72, 0.68))
 	top.add_child(hint)
 
+	# So a stale cached page is obvious at a glance rather than a mystery.
+	top.add_child(_make_label(BuildInfo.label(), 11, Color(0.55, 0.57, 0.54)))
+
 	_crosshair = _make_label("+", 20, Color(0.92, 0.92, 0.92, 0.55))
 	_centre(_crosshair, Vector2(-7, -14), Vector2(7, 14))
 	add_child(_crosshair)

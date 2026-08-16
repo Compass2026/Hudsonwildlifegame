@@ -13,16 +13,17 @@ var _determination: VBoxContainer
 var _verdict: RichTextLabel
 
 func _ready() -> void:
-	# Anchored to the centre with explicit offsets so it stays centred at any
-	# window size. Presets alone leave the offsets wherever they were.
-	anchor_left = 0.5
-	anchor_top = 0.5
-	anchor_right = 0.5
-	anchor_bottom = 0.5
-	offset_left = -440
-	offset_top = -310
-	offset_right = 440
-	offset_bottom = 310
+	# Inset from the window edges rather than a fixed size. A fixed 880x620 panel
+	# overflows a short window, and the first thing to fall off the bottom is the
+	# close button — which is exactly the thing you cannot afford to lose.
+	anchor_left = 0.0
+	anchor_top = 0.0
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	offset_left = 60
+	offset_top = 40
+	offset_right = -60
+	offset_bottom = -40
 	visible = false
 
 	var style := StyleBoxFlat.new()
@@ -66,7 +67,8 @@ func _make_text(tab_name: String) -> RichTextLabel:
 	rt.name = tab_name
 	rt.bbcode_enabled = true
 	rt.scroll_active = true
-	rt.custom_minimum_size = Vector2(840, 540)
+	rt.custom_minimum_size = Vector2(0, 0)
+	rt.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_tabs.add_child(rt)
 	return rt
 
@@ -194,7 +196,8 @@ func _refresh_determination() -> void:
 
 	var analysis := RichTextLabel.new()
 	analysis.bbcode_enabled = true
-	analysis.custom_minimum_size = Vector2(840, 260)
+	analysis.custom_minimum_size = Vector2(0, 0)
+	analysis.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var out := "[b]What the evidence supports[/b]\n"
 	out += "[color=#8a9]Confidence is how well the evidence fits, weighted by how likely the species is to be here. It is not proof.[/color]\n\n"
 	if FieldNotebook.entries.is_empty():
@@ -231,7 +234,7 @@ func _refresh_determination() -> void:
 
 	_verdict = RichTextLabel.new()
 	_verdict.bbcode_enabled = true
-	_verdict.custom_minimum_size = Vector2(840, 180)
+	_verdict.custom_minimum_size = Vector2(0, 120)
 	_determination.add_child(_verdict)
 	if not FieldNotebook.filed_reports.is_empty():
 		_show_verdict(FieldNotebook.filed_reports[FieldNotebook.filed_reports.size() - 1])
