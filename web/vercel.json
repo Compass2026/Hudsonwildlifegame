@@ -1,15 +1,4 @@
 {
-  "$comment": [
-    "Godot's web export uses fixed filenames (index.wasm, index.pck) with no",
-    "content hash, so 'immutable' caching is wrong: a new build reuses the same",
-    "names and browsers would keep serving the old game forever, or worse, pair",
-    "a new index.html with a stale pck.",
-    "",
-    "'no-cache' does NOT mean 'do not store'. It means 'always revalidate', so",
-    "the browser sends an If-None-Match and gets a cheap 304 when nothing has",
-    "changed. The 35 MB wasm is still only re-downloaded when it actually",
-    "changes, and a plain reload always picks up a new build."
-  ],
   "headers": [
     {
       "source": "/(.*)\\.(wasm|pck|js)",

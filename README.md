@@ -55,10 +55,16 @@ godot --headless --path . --export-release "Web" build/web/index.html
 cp build/web/* web/
 ```
 
-Then commit `web/` — Vercel deploys it automatically. A plain browser reload
-picks up the new build: `web/vercel.json` sets revalidating cache headers,
-because Godot's export uses fixed filenames with no content hash, so
-`immutable` caching would pin players to a stale build.
+Then commit `web/` — Vercel deploys it automatically, and a plain browser
+reload picks up the new build.
+
+`web/vercel.json` sets `no-cache, must-revalidate` rather than `immutable`.
+Godot's export uses fixed filenames (`index.wasm`, `index.pck`) with no content
+hash, so immutable caching pins players to whatever build they loaded first, and
+can pair a fresh `index.html` with a stale `.pck`. `no-cache` still stores the
+files and still serves a 304 when nothing changed, so the 35 MB wasm is not
+re-downloaded on every visit. Note that `vercel.json` rejects unknown top-level
+keys — there is nowhere in it to put a comment.
 
 The export preset is committed (`export_presets.cfg`). It uses the
 no-threads template, so the build needs no cross-origin isolation headers and
