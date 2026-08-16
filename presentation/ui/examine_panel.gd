@@ -40,15 +40,17 @@ func _ready() -> void:
 	vbox.add_child(_body)
 
 	var close := Button.new()
-	close.text = "Close  (E)"
+	close.text = "Close  —  E or Esc"
 	close.pressed.connect(hide_panel)
 	vbox.add_child(close)
 
 	EventBus.request_examine.connect(show_for)
 
-## Consume the close key here so the player does not immediately re-examine.
+## Claimed in _input so a focused button can never swallow the close key.
 func _input(event: InputEvent) -> void:
-	if visible and event.is_action_pressed("interact"):
+	if not visible:
+		return
+	if event.is_action_pressed("interact") or event.is_action_pressed("ui_cancel"):
 		hide_panel()
 		get_viewport().set_input_as_handled()
 
@@ -56,11 +58,13 @@ func show_for(record: EvidenceRecord) -> void:
 	var report := TrackExaminer.examine(record, _rng)
 	_body.text = _format(record, report)
 	visible = true
-	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	EventBus.ui_modal_changed.emit(true)
 
 func hide_panel() -> void:
+	if not visible:
+		return
 	visible = false
-	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	EventBus.ui_modal_changed.emit(false)
 
 func _format(r: EvidenceRecord, report: Dictionary) -> String:
 	var out := "[b]%s[/b]  —  %s\n" % [r.type_label(), r.substrate_label]

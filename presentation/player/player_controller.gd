@@ -23,6 +23,7 @@ var crouching := false
 var camera_mode := false          ## looking through the field camera
 var zoom := 1.0
 
+var _ui_modal_open := false
 var _camera: Camera3D
 var _pitch := 0.0
 var _field_camera := FieldCamera.new()
@@ -54,6 +55,7 @@ func _ready() -> void:
 	add_child(_perception)
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	EventBus.ui_modal_changed.connect(func(is_open): _ui_modal_open = is_open)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -74,9 +76,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			zoom = 1.0
 			_camera.fov = FOV_WIDE
 
-	if event.is_action_pressed("toggle_notebook"):
-		EventBus.request_notebook_toggle.emit()
-
 	if event.is_action_pressed("crouch"):
 		crouching = not crouching
 
@@ -92,10 +91,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		_examine_nearest()
 
 func _physics_process(delta: float) -> void:
-	# Any open panel releases the mouse; while it is released you are reading,
-	# not walking.
+	# While a panel is up you are reading, not walking. Gated on the UI's own
+	# announcement rather than on the cursor state, so freeing the cursor for
+	# any other reason never leaves you unable to move.
 	var input := Vector2.ZERO
-	if Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+	if not _ui_modal_open:
 		input = Input.get_vector("move_left", "move_right", "move_forward", "move_back")
 	var dir := (transform.basis * Vector3(input.x, 0.0, input.y))
 	dir.y = 0.0

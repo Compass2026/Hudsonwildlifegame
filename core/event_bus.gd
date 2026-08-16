@@ -41,3 +41,7 @@ signal notebook_updated()
 signal notice(text: String, kind: String) ## kind: "info" | "clue" | "success" | "warn"
 signal request_examine(record: EvidenceRecord)
 signal request_notebook_toggle()
+## A full-screen panel opened or closed. The player stops walking while one is
+## up, and the mouse cursor is released. Panels announce this; they never reach
+## into the player to do it.
+signal ui_modal_changed(is_open: bool)

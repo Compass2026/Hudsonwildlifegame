@@ -32,8 +32,19 @@ func _ready() -> void:
 	style.set_content_margin_all(14)
 	add_theme_stylebox_override("panel", style)
 
+	var column := VBoxContainer.new()
+	add_child(column)
+
 	_tabs = TabContainer.new()
-	add_child(_tabs)
+	_tabs.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(_tabs)
+
+	# An always-visible way out. Tab alone is not enough: once a tab button has
+	# keyboard focus, Godot's own focus navigation owns the Tab key.
+	var close := Button.new()
+	close.text = "Close notebook  —  Tab or Esc"
+	close.pressed.connect(close_panel)
+	column.add_child(close)
 
 	_briefing = _make_text("Briefing")
 	_evidence = _make_text("Evidence")
@@ -59,13 +70,32 @@ func _make_text(tab_name: String) -> RichTextLabel:
 	_tabs.add_child(rt)
 	return rt
 
+## Claim the toggle key in _input, which runs BEFORE focused Controls get a
+## look at it. Handling this in _unhandled_input meant that after clicking a
+## tab, the focused button consumed Tab as ui_focus_next and the notebook could
+## never be closed — with movement disabled behind it, that was a soft-lock.
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("toggle_notebook"):
+		toggle()
+		get_viewport().set_input_as_handled()
+	elif visible and event.is_action_pressed("ui_cancel"):
+		close_panel()
+		get_viewport().set_input_as_handled()
+
 func toggle() -> void:
-	visible = not visible
 	if visible:
-		refresh()
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		close_panel()
 	else:
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		open_panel()
+
+func open_panel() -> void:
+	visible = true
+	refresh()
+	EventBus.ui_modal_changed.emit(true)
+
+func close_panel() -> void:
+	visible = false
+	EventBus.ui_modal_changed.emit(false)
 
 func refresh() -> void:
 	_refresh_briefing()

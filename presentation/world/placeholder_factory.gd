@@ -26,12 +26,12 @@ static func mesh_node(mesh: Mesh, mat: Material, pos := Vector3.ZERO) -> MeshIns
 static func substrate_color(kind: Substrate.Kind) -> Color:
 	match kind:
 		Substrate.Kind.MUD: return Color(0.26, 0.20, 0.14)
-		Substrate.Kind.SAND: return Color(0.58, 0.52, 0.38)
-		Substrate.Kind.ROCK: return Color(0.46, 0.46, 0.44)
-		Substrate.Kind.DUFF: return Color(0.24, 0.25, 0.14)
-		Substrate.Kind.GRASS: return Color(0.30, 0.37, 0.19)
+		Substrate.Kind.SAND: return Color(0.47, 0.42, 0.31)
+		Substrate.Kind.ROCK: return Color(0.35, 0.35, 0.33)
+		Substrate.Kind.DUFF: return Color(0.17, 0.16, 0.10)
+		Substrate.Kind.GRASS: return Color(0.22, 0.27, 0.13)
 		Substrate.Kind.SNOW: return Color(0.90, 0.92, 0.95)
-	return Color(0.33, 0.34, 0.19)   # leaf litter
+	return Color(0.25, 0.23, 0.13)   # leaf litter
 
 ## A crude quadruped whose proportions come from the species data, so a lynx
 ## reads as long-legged and big-footed next to a bobcat even in placeholder form.
