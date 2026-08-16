@@ -55,6 +55,11 @@ godot --headless --path . --export-release "Web" build/web/index.html
 cp build/web/* web/
 ```
 
+Then commit `web/` — Vercel deploys it automatically. A plain browser reload
+picks up the new build: `web/vercel.json` sets revalidating cache headers,
+because Godot's export uses fixed filenames with no content hash, so
+`immutable` caching would pin players to a stale build.
+
 The export preset is committed (`export_presets.cfg`). It uses the
 no-threads template, so the build needs no cross-origin isolation headers and
 will run on any static host. Note that the browser build uses the Compatibility
