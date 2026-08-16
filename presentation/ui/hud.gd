@@ -12,13 +12,18 @@ var _notice_box: VBoxContainer
 var _crosshair: Label
 var _viewfinder: Control
 var _zoom_label: Label
+var _subject_label: Label
 var _player: PlayerController
 
 func setup(player: PlayerController) -> void:
 	_player = player
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Anchors AND offsets, set explicitly. set_anchors_preset() alone left this
+	# Control at zero size under the CanvasLayer, so everything anchored to the
+	# screen centre — crosshair, viewfinder, field notes — was laid out around
+	# the origin and drawn in (or off) the top-left corner.
+	_fill(self)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var top := VBoxContainer.new()
@@ -65,16 +70,38 @@ func _ready() -> void:
 	_refresh_objective()
 
 func _process(_delta: float) -> void:
-	if _player != null:
-		_viewfinder.visible = _player.camera_mode
-		_crosshair.visible = not _player.camera_mode
-		if _player.camera_mode:
-			_zoom_label.text = "%.1fx    f/4    ISO %d" % [
-				_player.zoom, int(lerpf(3200.0, 200.0, GameClock.light_level()))]
+	if _player == null:
+		return
+	_viewfinder.visible = _player.camera_mode
+	_crosshair.visible = not _player.camera_mode
+	if not _player.camera_mode:
+		return
+
+	_zoom_label.text = "%.1fx    f/4    ISO %d" % [
+		_player.zoom, int(lerpf(3200.0, 200.0, GameClock.light_level()))]
+
+	# Tell the player what the camera can see before they spend the shot. The
+	# species is deliberately NOT named — that is what the photograph is for.
+	var subject: Dictionary = _player.camera_subject
+	if subject.is_empty():
+		_subject_label.text = "NO SUBJECT IN FRAME"
+		_subject_label.add_theme_color_override("font_color", Color(0.95, 0.6, 0.45))
+		return
+	var fraction: float = subject.get("screen_fraction", 0.0)
+	var occlusion: float = subject.get("occlusion", 0.0)
+	var note := "animal in frame — %.0f m, fills %d%% of the frame" % [
+		subject.get("distance", 0.0), int(fraction * 100.0)]
+	if occlusion > 0.3:
+		note += ", partly behind cover"
+	if fraction < 0.05:
+		note += "  ·  too small to review — get closer or zoom"
+	_subject_label.text = note.to_upper()
+	_subject_label.add_theme_color_override("font_color",
+		Color(0.6, 0.9, 0.6) if fraction >= 0.05 and occlusion <= 0.3 else Color(0.95, 0.8, 0.45))
 
 func _build_viewfinder() -> void:
 	_viewfinder = Control.new()
-	_viewfinder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_fill(_viewfinder)
 	_viewfinder.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_viewfinder.visible = false
 	add_child(_viewfinder)
@@ -89,13 +116,24 @@ func _build_viewfinder() -> void:
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_viewfinder.add_child(frame)
 
+	# Bottom-right of the frame: the bottom-left belongs to the field notes.
 	_zoom_label = _make_label("", 14, Color(0.95, 0.35, 0.3))
-	_centre(_zoom_label, Vector2(-430, 244), Vector2(-100, 268))
+	_zoom_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_centre(_zoom_label, Vector2(180, 244), Vector2(430, 268))
 	_viewfinder.add_child(_zoom_label)
 
-	var shoot_hint := _make_label("LMB shutter   wheel zoom   F stow camera", 12, Color(0.9, 0.9, 0.9, 0.7))
-	_centre(shoot_hint, Vector2(-430, -300), Vector2(0, -282))
+	var shoot_hint := _make_label(
+		"LEFT CLICK to shoot    MOUSE WHEEL to zoom    F to stow the camera",
+		13, Color(0.95, 0.95, 0.95, 0.85))
+	shoot_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_centre(shoot_hint, Vector2(-430, -308), Vector2(430, -288))
 	_viewfinder.add_child(shoot_hint)
+
+	# Live read on the shot, directly under the frame where the eye already is.
+	_subject_label = _make_label("", 14, Color(0.9, 0.9, 0.9))
+	_subject_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_centre(_subject_label, Vector2(-430, 288), Vector2(430, 308))
+	_viewfinder.add_child(_subject_label)
 
 func _refresh_clock() -> void:
 	_clock_label.text = "%s    light %d%%" % [
@@ -126,6 +164,18 @@ func _on_notice(text: String, kind: String) -> void:
 	tween.tween_interval(NOTICE_LIFETIME)
 	tween.tween_property(label, "modulate:a", 0.0, 1.2)
 	tween.tween_callback(label.queue_free)
+
+## Fill the parent rect. Explicit, because the preset helpers are easy to get
+## subtly wrong and the failure mode is silent.
+func _fill(c: Control) -> void:
+	c.anchor_left = 0.0
+	c.anchor_top = 0.0
+	c.anchor_right = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = 0.0
+	c.offset_top = 0.0
+	c.offset_right = 0.0
+	c.offset_bottom = 0.0
 
 ## Anchor a control to the screen centre with explicit offsets, so it stays put
 ## at any resolution.

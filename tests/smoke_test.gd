@@ -47,6 +47,57 @@ func _ready() -> void:
 
 	_check("the investigation started", InvestigationSystem.active != null)
 
+	# --- HUD occupies the screen --------------------------------------------
+	# Regression: the HUD Control sat at zero size under its CanvasLayer, so
+	# everything anchored to the screen centre was laid out around the origin.
+	# The crosshair went off-screen, the field notes drew above the top edge,
+	# and the camera viewfinder appeared as a stray white box in the corner.
+	var viewport_size := get_viewport().get_visible_rect().size
+	var hud: HUD = main.ui.hud
+	_check("the HUD fills the viewport (%s vs %s)" % [hud.size, viewport_size],
+		hud.size.x >= viewport_size.x - 1.0 and hud.size.y >= viewport_size.y - 1.0)
+
+	main.player.camera_mode = true
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_check("raising the camera hides the crosshair", not hud._crosshair.visible)
+	_check("the viewfinder is on screen, not in the corner",
+		hud._viewfinder.size.x >= viewport_size.x - 1.0)
+	# --- The camera actually photographs an animal --------------------------
+	# The player has to be able to complete the loop, not just see a viewfinder.
+	var animals2 := get_tree().get_nodes_in_group(&"animal")
+	if not animals2.is_empty():
+		# Bring the animal to open ground in front of the player rather than
+		# chasing it across the map: a live animal keeps walking, and a tree or
+		# a rise between the two makes this test flap for reasons that have
+		# nothing to do with the camera.
+		var target: AnimalController = animals2[0]
+		target.set_physics_process(false)
+		var player: PlayerController = main.player
+		player.rotation.y = 0.0
+		var cam: Camera3D = player.get_node("EyeCamera")
+		cam.rotation.x = 0.0
+		var spot := player.global_position + Vector3(0.0, 0.0, -6.0)   # -Z is forward
+		target.global_position = Vector3(
+			spot.x, EnvironmentSystem.height_at(spot.x, spot.z) + 0.2, spot.z)
+		for i in 4:
+			await get_tree().process_frame
+		_check("the raised camera sees an animal in front of it",
+			not player._best_subject_in_frame().is_empty())
+
+		var before := FieldNotebook.entries.size()
+		main.player.take_photograph()
+		await get_tree().process_frame
+		var photos := FieldNotebook.entries_of_kind(EvidenceKind.Type.PHOTOGRAPH)
+		_check("the shutter files a photograph in the notebook",
+			FieldNotebook.entries.size() > before and not photos.is_empty())
+		if not photos.is_empty():
+			_check("a clear close shot is worth something (%d%%)"
+				% int(photos[0].effective_quality() * 100.0),
+				photos[0].effective_quality() > 0.0)
+
+	main.player.camera_mode = false
+
 	# --- GPU budget ---------------------------------------------------------
 	# Browsers give up where the desktop shrugs, and they do it silently: the
 	# whole 3D pass stops drawing with no error. Three separate times this

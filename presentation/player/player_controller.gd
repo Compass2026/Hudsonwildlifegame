@@ -23,6 +23,11 @@ var crouching := false
 var camera_mode := false          ## looking through the field camera
 var zoom := 1.0
 
+## What the raised camera can currently see. Read by the viewfinder UI; empty
+## when there is nothing identifiable in frame.
+var camera_subject: Dictionary = {}
+
+var _subject_timer := 0.0
 var _ui_modal_open := false
 var _camera: Camera3D
 var _pitch := 0.0
@@ -56,6 +61,7 @@ func _ready() -> void:
 
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	EventBus.ui_modal_changed.connect(func(is_open): _ui_modal_open = is_open)
+	EventBus.animal_sighted.connect(_on_first_sighting)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -125,6 +131,27 @@ func _physics_process(delta: float) -> void:
 	_camera.fov = lerpf(_camera.fov, lerpf(FOV_WIDE, FOV_TELE, (zoom - 1.0) / 5.0), delta * 10.0)
 
 	InvestigationSystem.report_player_position(global_position)
+
+	# While the camera is up, keep a cheap read on what is actually in frame so
+	# the viewfinder can tell the player what the shot is worth BEFORE they take
+	# it. Throttled, because it casts rays.
+	if camera_mode:
+		_subject_timer -= delta
+		if _subject_timer <= 0.0:
+			_subject_timer = 0.2
+			camera_subject = _best_subject_in_frame()
+	elif not camera_subject.is_empty():
+		camera_subject = {}
+
+var _camera_prompted := false
+
+## A sighting is worth nothing undocumented, and the camera is no use if the
+## player never finds out it is there.
+func _on_first_sighting(_species_id: StringName, _uid: int) -> void:
+	if _camera_prompted:
+		return
+	_camera_prompted = true
+	EventBus.notice.emit("Press F to raise your camera, then left click to shoot.", "info")
 
 # --- Equipment ------------------------------------------------------------
 
