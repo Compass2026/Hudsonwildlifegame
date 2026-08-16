@@ -48,23 +48,29 @@ A Web export is committed under `web/` and deployed to Vercel, so you can try
 the prototype without installing anything. It is a convenience, not the target
 platform — desktop loads faster, runs better, and gives you a console.
 
-To rebuild it after changing the game:
+To rebuild it after changing the game, bump `BUILD` in `core/build_info.gd`
+(it is shown in the HUD, so you can always tell which build is running) and run:
 
 ```bash
-godot --headless --path . --export-release "Web" build/web/index.html
-cp build/web/* web/
+tools/export_web.sh /path/to/godot
 ```
 
-Then commit `web/` — Vercel deploys it automatically, and a plain browser
-reload picks up the new build.
+Then commit `web/` — Vercel deploys it automatically and a plain reload picks it
+up.
 
-`web/vercel.json` sets `no-cache, must-revalidate` rather than `immutable`.
-Godot's export uses fixed filenames (`index.wasm`, `index.pck`) with no content
-hash, so immutable caching pins players to whatever build they loaded first, and
-can pair a fresh `index.html` with a stale `.pck`. `no-cache` still stores the
-files and still serves a 304 when nothing changed, so the 35 MB wasm is not
-re-downloaded on every visit. Note that `vercel.json` rejects unknown top-level
-keys — there is nowhere in it to put a comment.
+**Do not just export and copy.** Godot always emits `index.wasm` and
+`index.pck`, and those names never change between builds. A browser that cached
+them once keeps serving the old game no matter how often you reload — and
+because `index.html` revalidates while the pack does not, players end up running
+a *new page against an old pack*. That bit us for real: a build shipped, the
+page updated, and the game did not.
+
+`tools/export_web.sh` renames the pack, wasm and loader after the build
+(`hudson-m1.6.pck`, …) and repoints `index.html` at them, so a new build
+requests URLs the browser has never seen. Caching then cannot pin anyone to an
+old build. `web/vercel.json` also sets revalidating rather than `immutable`
+headers as a second line of defence — note it rejects unknown top-level keys, so
+there is nowhere in it to put a comment.
 
 The export preset is committed (`export_presets.cfg`). It uses the
 no-threads template, so the build needs no cross-origin isolation headers and
