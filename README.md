@@ -72,8 +72,11 @@ different; no gameplay system is aware of the difference.
 | `F` | Raise / stow the field camera |
 | Mouse wheel | Zoom (camera raised) |
 | Left mouse | Shutter |
-| `Tab` | Field notebook |
-| `Esc` | Release the mouse |
+| `Tab` | Open / close the field notebook |
+| `Esc` | Close an open panel, or release the mouse |
+
+The notebook opens on the briefing when the investigation starts. Close it with
+`Tab`, `Esc`, or the button at its foot — you cannot walk while a panel is up.
 
 ---
 
