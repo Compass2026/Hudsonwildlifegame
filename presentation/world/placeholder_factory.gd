@@ -160,14 +160,23 @@ static func track_material() -> StandardMaterial3D:
 	return mat
 
 ## How a single print looks: darker and more opaque the better it registered.
-## Intentionally low contrast — sign should be found, not flagged.
+## Still low contrast — sign should be found, not flagged — but readable once
+## you are standing over it.
 static func track_instance_color(record: EvidenceRecord) -> Color:
 	var depth: float = record.effective_quality()
-	return Color(0.10, 0.08, 0.06, clampf(0.20 + depth * 0.55, 0.12, 0.8))
+	return Color(0.09, 0.07, 0.05, clampf(0.30 + depth * 0.62, 0.20, 0.92))
+
+## Drawn larger than life on purpose.
+##
+## A lynx foot is 8-11 cm across. At standing eye height that is a few pixels,
+## and a print you cannot see is not a puzzle, it is a pixel hunt. The number
+## the player MEASURES is always the true one — this scales the drawing only,
+## so identification is unaffected.
+const TRACK_LEGIBILITY := 1.8
 
 static func track_instance_size(record: EvidenceRecord) -> float:
 	var width_cm: float = float(record.truth.get("width_cm", 6.0))
-	return clampf(width_cm / 100.0, 0.04, 0.16)
+	return clampf(width_cm / 100.0, 0.04, 0.16) * TRACK_LEGIBILITY
 
 # Sign types that stay rare get ordinary nodes, but still share one material
 # each. Materials are per-kind, never per-instance.

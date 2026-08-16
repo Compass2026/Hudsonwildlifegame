@@ -21,8 +21,8 @@ static func _mat(key: String) -> StandardMaterial3D:
 		return _mats[key]
 	var m: StandardMaterial3D
 	match key:
-		"canvas":     m = PlaceholderFactory.material(Color(0.50, 0.47, 0.38))
-		"canvas_dark":m = PlaceholderFactory.material(Color(0.34, 0.31, 0.24))
+		"canvas":     m = PlaceholderFactory.material(Color(0.38, 0.35, 0.28))
+		"canvas_dark":m = PlaceholderFactory.material(Color(0.16, 0.14, 0.11))
 		"wood":       m = PlaceholderFactory.material(Color(0.40, 0.29, 0.18))
 		"wood_pale":  m = PlaceholderFactory.material(Color(0.46, 0.36, 0.23))
 		"char":       m = PlaceholderFactory.material(Color(0.10, 0.09, 0.08))
@@ -106,11 +106,13 @@ static func _build_tent(camp: Node3D, origin: Vector3, at: Vector3, yaw: float) 
 			var mid: Vector3 = (anchor + peg) * 0.5
 			var span: Vector3 = peg - anchor
 			var mi := PlaceholderFactory.mesh_node(line, _mat("wood_pale"), mid)
-			mi.scale = Vector3(1, span.length(), 1)
-			# Point the cylinder's +Y along the line.
+			camp.add_child(mi)
+			# Aim first, THEN stretch. look_at rewrites the whole basis, so a
+			# scale set beforehand is silently thrown away — which left the guy
+			# lines one metre long and floating clear of the tent.
 			mi.look_at_from_position(mid, mid + span, Vector3.UP)
 			mi.rotate_object_local(Vector3.RIGHT, PI * 0.5)
-			camp.add_child(mi)
+			mi.scale = Vector3(1.0, span.length(), 1.0)
 
 # --- Fire -----------------------------------------------------------------
 
