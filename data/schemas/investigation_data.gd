@@ -10,6 +10,7 @@ enum ObjectiveType {
 	DISCOVER_EVIDENCE,  ## params: evidence_type (String), count (int)
 	EXAMINE_EVIDENCE,   ## params: count (int)
 	PHOTOGRAPH,         ## params: min_quality (float)
+	PHOTOGRAPH_SPECIES, ## params: species (String), min_quality (float)
 	EVIDENCE_STRENGTH,  ## params: min (float)
 	RETURN_TO,          ## params: position ([x,y,z]), radius (float)
 	FILE_REPORT,        ## params: none

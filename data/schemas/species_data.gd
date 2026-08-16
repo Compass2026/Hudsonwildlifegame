@@ -46,6 +46,12 @@ enum Rarity { COMMON, UNCOMMON, RARE, VERY_RARE, EXTRAORDINARY }
 @export var placeholder_color := Color(0.6, 0.55, 0.45)
 @export var body_length_m := 1.0
 @export var shoulder_height_m := 0.6
+## Field marks, so two similar species do not read as one model rescaled.
+@export var ear_tuft_ratio := 0.10   ## tuft length as a share of shoulder height
+@export var tail_ratio := 0.30       ## tail length as a share of body length
+@export var face_ruff := 0.0         ## flared cheek fur, 0 = none
+@export var paw_scale := 1.0         ## visual foot size; lynx feet are enormous
+@export var coat_spotted := false
 
 func is_fictional() -> bool:
 	return provenance == ContentProvenance.Kind.SPECULATIVE
@@ -86,6 +92,11 @@ static func from_dict(d: Dictionary) -> SpeciesData:
 	t.claw_marks = bool(td.get("claw_marks", false))
 	t.gait = td.get("gait", "walk")
 	t.clarity_bias = float(td.get("clarity_bias", 0.0))
+	t.foot_shape = td.get("foot_shape", "cat")
+	t.heel_scale = float(td.get("heel_scale", 1.0))
+	t.toe_scale = float(td.get("toe_scale", 1.0))
+	t.toe_spread_deg = float(td.get("toe_spread_deg", 58.0))
+	t.edge_softness = float(td.get("edge_softness", 0.35))
 	t.field_notes = td.get("field_notes", "")
 	s.track = t
 
@@ -114,6 +125,11 @@ static func from_dict(d: Dictionary) -> SpeciesData:
 	s.placeholder_color = Color(float(c[0]), float(c[1]), float(c[2]))
 	s.body_length_m = float(p.get("body_length_m", 1.0))
 	s.shoulder_height_m = float(p.get("shoulder_height_m", 0.6))
+	s.ear_tuft_ratio = float(p.get("ear_tuft_ratio", 0.10))
+	s.tail_ratio = float(p.get("tail_ratio", 0.30))
+	s.face_ruff = float(p.get("face_ruff", 0.0))
+	s.paw_scale = float(p.get("paw_scale", 1.0))
+	s.coat_spotted = bool(p.get("coat_spotted", false))
 	var scene_path: String = p.get("visual_scene", "")
 	if scene_path != "" and ResourceLoader.exists(scene_path):
 		s.visual_scene = load(scene_path)

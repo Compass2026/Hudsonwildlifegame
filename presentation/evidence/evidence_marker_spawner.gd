@@ -33,9 +33,10 @@ func _ready() -> void:
 	EventBus.evidence_discovered.connect(_on_discovered)
 	sync_existing()
 
+## Keyed by species: each one's foot is a different shape, so each gets its own
+## MultiMesh. Still one draw call per species, however many prints it leaves.
 func _shape_key(record: EvidenceRecord) -> String:
-	return "%d%s" % [int(record.truth.get("toe_count", 4)),
-		"c" if bool(record.truth.get("claw_marks", false)) else ""]
+	return String(record.source_species_id)
 
 func _pool_for(record: EvidenceRecord) -> Dictionary:
 	var key := _shape_key(record)
@@ -45,9 +46,9 @@ func _pool_for(record: EvidenceRecord) -> Dictionary:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
-	mm.mesh = PlaceholderFactory.track_mesh_for(
-		int(record.truth.get("toe_count", 4)),
-		bool(record.truth.get("claw_marks", false)))
+	var species := SpeciesDB.get_species(record.source_species_id)
+	var profile: TrackProfile = species.track if species != null else TrackProfile.new()
+	mm.mesh = PlaceholderFactory.track_mesh_for_profile(profile)
 	mm.instance_count = TRACK_CAPACITY
 
 	var node := MultiMeshInstance3D.new()

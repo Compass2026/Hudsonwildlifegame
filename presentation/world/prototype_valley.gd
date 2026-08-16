@@ -18,8 +18,8 @@ const CREEK_OFFSET := 17.0   ## metres east of camp
 const CAMP_CENTRE := Vector2(0.0, 0.0)
 const CAMP_FLAT_RADIUS := 8.0
 const CAMP_BLEND := 9.0
-const TREE_COUNT := 300
-const SHRUB_COUNT := 1500
+const TREE_COUNT := 650
+const SHRUB_COUNT := 1800
 const ROCK_COUNT := 260
 
 var _noise := FastNoiseLite.new()
@@ -67,11 +67,23 @@ func height_at(x: float, z: float) -> float:
 	return lerpf(raw, _camp_level, blend)
 
 func _raw_height(x: float, z: float) -> float:
-	var rolling := _noise.get_noise_2d(x, z) * 14.0
 	var slope := (z + EXTENT) / (EXTENT * 2.0) * 10.0   ## valley climbs to the north
+	# A channel with a FLAT BED, not a V. A parabola bottoms out at a point, so
+	# water sat in a 25 cm wide sliver and was invisible; a real creek has a bed
+	# you can walk, with the print-holding mud along its margins.
 	var d := absf(x - creek_x(z))
-	var carve := clampf(1.0 - d / 16.0, 0.0, 1.0)
-	return rolling + slope - carve * carve * 7.0
+	var t := clampf((d - BED_HALF_WIDTH) / (BANK_HALF_WIDTH - BED_HALF_WIDTH), 0.0, 1.0)
+	var depth := CHANNEL_DEPTH * (1.0 - t * t)
+	# The hillside noise is +/-14 m and the channel only 7 m deep, so left alone
+	# the noise simply drowned the carve: the true low point wandered several
+	# metres off the centre line and a water surface keyed to the centre sat
+	# above the ground on one bank and under it on the other. Water cuts its own
+	# bed in real ground, so fade the noise out as the bed is approached. Inside
+	# BED_HALF_WIDTH it is gone entirely and the bed is genuinely flat and
+	# genuinely the lowest ground.
+	var smooth := t * t * (3.0 - 2.0 * t)
+	var rolling := _noise.get_noise_2d(x, z) * 14.0 * smooth
+	return rolling + slope - depth
 
 ## The drainage meanders; following it is the point. Offset so it runs PAST
 ## camp rather than through it — you camp near water, not in it.
@@ -163,32 +175,70 @@ func _ground_color(p: Vector3) -> Color:
 	var mossy := maxf(0.0, _noise.get_noise_2d(p.x * 4.0, p.z * 4.0)) * 0.16
 	return shaded.lerp(Color(0.16, 0.19, 0.09), mossy)
 
+const BED_HALF_WIDTH := 3.4    ## flat bed either side of the centre line
+const BANK_HALF_WIDTH := 16.0  ## where the channel meets the hillside
+const CHANNEL_DEPTH := 7.0
+const WATER_HALF_WIDTH := 4.0  ## the quad; terrain hides whatever overhangs
+const WATER_DEPTH := 0.30      ## how deep the water stands over the bed
+
+## Actual water in the channel: a surface that follows the lowest line of the
+## carved bed, sits below its banks, and is wide enough to be a feature you
+## navigate by rather than a painted stripe.
+##
+## The mud that holds prints is the margin either side of it, so the water is
+## also the clearest visual cue for where tracking is worth doing.
 func _build_water() -> void:
-	# A thin ribbon following the creek, purely visual. It marks the mud.
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var step := 2.0
 	var z := -EXTENT
-	while z < EXTENT - 2.0:
-		var z2 := z + 2.0
+	while z < EXTENT - step:
+		var z2 := z + step
 		var xa := creek_x(z)
 		var xb := creek_x(z2)
-		var ya := height_at(xa, z) + 0.15
-		var yb := height_at(xb, z2) + 0.15
-		var quad := [
-			Vector3(xa - 1.6, ya, z), Vector3(xa + 1.6, ya, z),
-			Vector3(xb + 1.6, yb, z2), Vector3(xb - 1.6, yb, z2)]
-		for p in [quad[0], quad[2], quad[1], quad[0], quad[3], quad[2]]:
+		# Surface height from the deepest point of the bed, not the bank.
+		var ya := _bed_level(xa, z)
+		var yb := _bed_level(xb, z2)
+		var a_l := Vector3(xa - WATER_HALF_WIDTH, ya, z)
+		var a_r := Vector3(xa + WATER_HALF_WIDTH, ya, z)
+		var b_l := Vector3(xb - WATER_HALF_WIDTH, yb, z2)
+		var b_r := Vector3(xb + WATER_HALF_WIDTH, yb, z2)
+		# Godot's front face is the CLOCKWISE winding, which is the opposite of
+		# what feels natural to write. The first version of this quad wound the
+		# other way, so the surface faced the bed and was culled from every angle
+		# a player can stand at: the water was in the scene the whole time and
+		# never drew a pixel. Same order as the terrain above, which is correct.
+		for p in [a_l, a_r, b_r, a_l, b_r, b_l]:
+			st.set_uv(Vector2(p.x * 0.25, p.z * 0.25))
 			st.add_vertex(p)
 		z = z2
 	st.generate_normals()
+	st.generate_tangents()
+
 	var mi := MeshInstance3D.new()
 	mi.name = "Creek"
 	mi.mesh = st.commit()
-	var mat := PlaceholderFactory.material(Color(0.20, 0.32, 0.36, 0.75), 0.15)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.16, 0.29, 0.31, 0.82)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	mat.metallic = 0.4
+	mat.roughness = 0.08
+	mat.metallic = 0.25
+	mat.metallic_specular = 0.9
+	# Water is worth seeing from the bank, from the bed, and from a ford, and it
+	# is one surface — culling it buys nothing and only risks losing it again.
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	# Shallow, moving water catches the sky at grazing angles.
+	mat.rim_enabled = true
+	mat.rim = 0.45
+	mat.rim_tint = 0.3
 	mi.material_override = mat
 	add_child(mi)
+
+## Water stands WATER_DEPTH above the bed. The bed is flat across BED_HALF_WIDTH,
+## so the surface shows as a band that width plus a little, and disappears under
+## the terrain as the banks rise — which is exactly how a creek looks.
+func _bed_level(x: float, z: float) -> float:
+	return height_at(x, z) + WATER_DEPTH
 
 ## Both the materials AND the meshes are built once and shared by every tree.
 ##
@@ -229,8 +279,8 @@ func _build_tree_resources() -> void:
 		var crown := SphereMesh.new()
 		crown.radius = 1.0
 		crown.height = 1.6 + float(i) * 0.25
-		crown.radial_segments = 7
-		crown.rings = 4
+		crown.radial_segments = 6
+		crown.rings = 3
 		_crown_meshes.append(crown)
 
 func _build_trees() -> void:
@@ -253,8 +303,8 @@ func _build_trees() -> void:
 		if h > 18.0:
 			continue          # bare ledge above the treeline
 		var density := _noise.get_noise_2d(x * 2.0, z * 2.0)
-		if density < -0.25:
-			continue          # natural openings
+		if density < -0.45:
+			continue          # natural openings, now rarer — this is deep forest
 		placed += 1
 		# Conifer on the higher, colder ground; mixed hardwood lower down.
 		var conifer := h > 6.0 or rng.randf() < 0.55
@@ -304,7 +354,7 @@ func _add_tree(pos: Vector3, rng: RandomNumberGenerator, conifer: bool) -> void:
 				canopy_tint)
 	else:
 		var crown_r := rng.randf_range(2.0, 3.4)
-		for i in 3:
+		for i in 2:
 			var r := crown_r * rng.randf_range(0.55, 0.8)
 			_bucket(_crown_meshes[rng.randi() % 3],
 				Transform3D(Basis.from_euler(Vector3(0, yaw, 0)).scaled(Vector3(r, r, r)),
@@ -360,8 +410,8 @@ func _build_ground_cover() -> void:
 	var shrub := SphereMesh.new()
 	shrub.radius = 1.0
 	shrub.height = 1.4
-	shrub.radial_segments = 6
-	shrub.rings = 3
+	shrub.radial_segments = 5
+	shrub.rings = 2
 	var shrub_mat := PlaceholderFactory.material(Color.WHITE)
 	shrub_mat.vertex_color_use_as_albedo = true
 	_scatter_multimesh("Undergrowth", shrub, shrub_mat, SHRUB_COUNT, rng,

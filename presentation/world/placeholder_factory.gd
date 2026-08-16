@@ -33,13 +33,20 @@ static func substrate_color(kind: Substrate.Kind) -> Color:
 		Substrate.Kind.SNOW: return Color(0.90, 0.92, 0.95)
 	return Color(0.25, 0.23, 0.13)   # leaf litter
 
-## A crude quadruped whose proportions come from the species data, so a lynx
-## reads as long-legged and big-footed next to a bobcat even in placeholder form.
+## A stand-in animal whose every distinguishing feature comes from species data,
+## so two cats do not look like the same cat at different sizes.
+##
+## What actually separates a lynx from a bobcat in the field: leg length, foot
+## size, ear tufts, tail length and tip, the facial ruff, and coat pattern. All
+## of those are data fields, so the placeholder can already be identified by
+## eye — which is the skill the game is asking for.
 static func build_animal(species: SpeciesData) -> Node3D:
 	var root := Node3D.new()
 	root.name = "PlaceholderView"
-	var mat := material(species.placeholder_color)
+	var coat := material(species.placeholder_color)
 	var dark := material(species.placeholder_color.darkened(0.55))
+	var tip := material(Color(0.06, 0.05, 0.05))
+	var pale := material(species.placeholder_color.lightened(0.25))
 
 	var body_len: float = species.body_length_m
 	var height: float = species.shoulder_height_m
@@ -48,99 +55,168 @@ static func build_animal(species: SpeciesData) -> Node3D:
 	var body := CapsuleMesh.new()
 	body.radius = body_r
 	body.height = body_len
-	var body_node := mesh_node(body, mat, Vector3(0, height, 0))
+	var body_node := mesh_node(body, coat, Vector3(0, height, 0))
 	body_node.rotation_degrees = Vector3(90, 0, 0)
 	root.add_child(body_node)
+
+	# Spots, for a patterned coat. A bobcat is spotted; a lynx is not.
+	if species.coat_spotted:
+		var spot := SphereMesh.new()
+		spot.radius = body_r * 0.17
+		spot.height = body_r * 0.2
+		spot.radial_segments = 5
+		spot.rings = 3
+		var rng := RandomNumberGenerator.new()
+		rng.seed = int(species.id.hash())
+		for i in 10:
+			var along := rng.randf_range(-0.4, 0.42) * body_len
+			var around := rng.randf() * TAU
+			root.add_child(mesh_node(spot, dark, Vector3(
+				cos(around) * body_r * 0.95, height + sin(around) * body_r * 0.8, along)))
+
+	var head_y := height + body_r * 0.42
+	var head_z := body_len * 0.52
+
+	# Facial ruff — the flared cheek fur, big on a lynx.
+	if species.face_ruff > 0.01:
+		var ruff := SphereMesh.new()
+		ruff.radius = body_r * (0.95 + species.face_ruff * 0.5)
+		ruff.height = body_r * 1.1
+		root.add_child(mesh_node(ruff, pale, Vector3(0, head_y, head_z - body_r * 0.35)))
 
 	var head := SphereMesh.new()
 	head.radius = body_r * 0.85
 	head.height = body_r * 1.7
-	root.add_child(mesh_node(head, mat, Vector3(0, height + body_r * 0.4, body_len * 0.52)))
+	root.add_child(mesh_node(head, coat, Vector3(0, head_y, head_z)))
 
-	# Ear tufts — the field mark, scaled off the species' own proportions.
+	# Ear tufts. Long and black on a lynx, stubby on a bobcat.
 	for side in [-1.0, 1.0]:
 		var tuft := CylinderMesh.new()
 		tuft.top_radius = 0.0
-		tuft.bottom_radius = body_r * 0.16
-		tuft.height = height * 0.16
-		root.add_child(mesh_node(tuft, dark, Vector3(side * body_r * 0.45,
-			height + body_r * 1.15, body_len * 0.5)))
+		tuft.bottom_radius = body_r * 0.15
+		tuft.height = maxf(0.01, height * species.ear_tuft_ratio)
+		root.add_child(mesh_node(tuft, tip, Vector3(side * body_r * 0.45,
+			head_y + body_r * 0.75 + tuft.height * 0.5, head_z - body_r * 0.1)))
 
-	# Legs. Leg length is where lynx and bobcat visibly differ.
+	# Legs, and the feet on the end of them. Foot size is the single best field
+	# mark between these two species, so the placeholder shows it.
 	var leg := CylinderMesh.new()
 	leg.top_radius = body_r * 0.22
 	leg.bottom_radius = body_r * 0.26
 	leg.height = height
+	var paw := SphereMesh.new()
+	paw.radius = body_r * 0.30 * species.paw_scale
+	paw.height = body_r * 0.34 * species.paw_scale
+	paw.radial_segments = 6
+	paw.rings = 4
 	for x in [-1.0, 1.0]:
 		for z in [-1.0, 1.0]:
-			root.add_child(mesh_node(leg, dark, Vector3(
-				x * body_r * 0.7, height * 0.5, z * body_len * 0.32)))
+			var foot := Vector3(x * body_r * 0.7, 0.0, z * body_len * 0.32)
+			root.add_child(mesh_node(leg, dark, foot + Vector3(0, height * 0.5, 0)))
+			root.add_child(mesh_node(paw, dark, foot + Vector3(0, paw.radius * 0.7, 0)))
 
+	# Tail. A lynx tail is a stub with a wholly black tip; a bobcat's is longer.
+	var tail_len: float = body_len * species.tail_ratio
 	var tail := CapsuleMesh.new()
 	tail.radius = body_r * 0.22
-	tail.height = body_len * 0.28
-	var tail_node := mesh_node(tail, dark, Vector3(0, height + body_r * 0.3, -body_len * 0.55))
-	tail_node.rotation_degrees = Vector3(70, 0, 0)
+	tail.height = tail_len
+	var tail_node := mesh_node(tail, coat,
+		Vector3(0, height + body_r * 0.3, -body_len * 0.5 - tail_len * 0.35))
+	tail_node.rotation_degrees = Vector3(72, 0, 0)
 	root.add_child(tail_node)
+
+	var tail_tip := SphereMesh.new()
+	tail_tip.radius = body_r * 0.24
+	tail_tip.height = body_r * 0.3
+	root.add_child(mesh_node(tail_tip, tip,
+		Vector3(0, height + body_r * 0.05, -body_len * 0.5 - tail_len * 0.75)))
 	return root
 
-## Track marks are drawn in bulk by a MultiMesh, so the factory supplies the
-## shared mesh and material rather than per-track nodes. One material for every
-## track in the world: creating one per track exhausts WebGL resources and
-## silently kills 3D rendering in the browser.
+## An actual print rather than a smudge, and a DIFFERENT print per species.
 ##
-## Per-track variation rides on the MultiMesh instance data instead — size and
-## heading in the transform, print clarity in the instance colour.
-## An actual print rather than a smudge: a heel pad with toe pads arranged
-## ahead of it, built flat in XZ so the ground normal can tilt it.
+## Everything about the shape comes from the species' TrackProfile — foot type,
+## toe count, how far the toes fan, how big the heel is against them, whether
+## claws register, and how soft the edges are. A lynx draws as a huge round pad
+## with blurred outlines because its feet are furred; a bobcat draws smaller
+## with crisper, better separated toes. Both from data, no special cases.
 ##
-## The shape is generated from the same data the identification system reads —
-## toe count and whether claws register — so a species whose claws show gets a
-## print with claw marks without anyone writing a second track renderer. Pads
-## fade at their edges, which is what stops a print reading as a sticker.
-##
-## Unit space: roughly 1.0 wide by 1.3 long. Instance scale turns that into the
-## real width of the animal's foot.
-static func track_mesh_for(toe_count: int, claws: bool) -> ArrayMesh:
+## Built flat in XZ so the ground normal can tilt it. Unit space is roughly
+## 1.0 wide; instance scale turns that into the real width of the foot.
+static func track_mesh_for_profile(track: TrackProfile) -> ArrayMesh:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var soft: float = clampf(track.edge_softness, 0.0, 1.0)
 
-	# Heel pad. Wide, set back, slightly lobed at the rear — the biggest single
-	# feature of a cat print and the one that survives poor ground longest.
-	_add_pad(st, Vector2(0.0, -0.34), Vector2(0.34, 0.24), 14)
-	_add_pad(st, Vector2(-0.16, -0.46), Vector2(0.13, 0.10), 10)
-	_add_pad(st, Vector2(0.16, -0.46), Vector2(0.13, 0.10), 10)
-
-	# Toes, fanned ahead of the heel. Real prints are asymmetric; the leading
-	# toe sits proud of the others, which is how you tell left from right.
-	var count: int = maxi(toe_count, 1)
-	var spread := deg_to_rad(58.0)
-	for i in count:
-		var t := 0.0 if count == 1 else (float(i) / float(count - 1)) * 2.0 - 1.0
-		var angle := t * spread
-		var reach := 0.42 - absf(t) * 0.06
-		var centre := Vector2(sin(angle) * reach * 1.15, cos(angle) * reach - 0.02)
-		centre.x += 0.03            # the asymmetry that makes it a left or a right
-		var pad := Vector2(0.15, 0.18) * (1.0 - absf(t) * 0.16)
-		_add_pad(st, centre, pad, 12)
-
-		if claws:
-			var claw_at := centre + Vector2(sin(angle), cos(angle)) * 0.17
-			_add_pad(st, claw_at, Vector2(0.045, 0.09), 6)
+	match track.foot_shape:
+		"hoof":
+			_build_hoof(st, soft)
+		"bird":
+			_build_bird(st, track, soft)
+		"dog":
+			_build_pad_foot(st, track, soft, 0.30, 0.46, true)
+		_:
+			# Cat: round, heel-dominant, toes tight and asymmetric.
+			_build_pad_foot(st, track, soft, 0.34, 0.42, false)
 
 	st.generate_normals()
 	return st.commit()
 
-## A flat elliptical pad, opaque at the centre and fading out at the rim, so
-## pads blend into the ground instead of ending on a hard edge.
-static func _add_pad(st: SurfaceTool, centre: Vector2, radius: Vector2, segments: int) -> void:
+## The common four/five-toed pad foot. Dogs are longer and more symmetrical
+## with claws; cats are rounder with the toes set closer to the pad.
+static func _build_pad_foot(st: SurfaceTool, track: TrackProfile, soft: float,
+		heel_radius: float, toe_reach: float, symmetric: bool) -> void:
+	var heel := heel_radius * track.heel_scale
+	# Heel pad, with rear lobes — the biggest feature and the last to wash out.
+	_add_pad(st, Vector2(0.0, -0.34), Vector2(heel, heel * 0.70), 14, soft)
+	_add_pad(st, Vector2(-heel * 0.47, -0.46), Vector2(heel * 0.38, heel * 0.30), 10, soft)
+	_add_pad(st, Vector2(heel * 0.47, -0.46), Vector2(heel * 0.38, heel * 0.30), 10, soft)
+
+	var count: int = maxi(track.toe_count, 1)
+	var spread := deg_to_rad(track.toe_spread_deg)
+	for i in count:
+		var t := 0.0 if count == 1 else (float(i) / float(count - 1)) * 2.0 - 1.0
+		var angle := t * spread
+		var reach := toe_reach - absf(t) * 0.06
+		var centre := Vector2(sin(angle) * reach * 1.15, cos(angle) * reach - 0.02)
+		if not symmetric:
+			centre.x += 0.03      # the offset that makes it a left or a right
+		var pad := Vector2(0.15, 0.18) * track.toe_scale * (1.0 - absf(t) * 0.16)
+		_add_pad(st, centre, pad, 12, soft)
+
+		if track.claw_marks:
+			var claw_at := centre + Vector2(sin(angle), cos(angle)) * (0.16 * track.toe_scale)
+			_add_pad(st, claw_at, Vector2(0.05, 0.10) * track.toe_scale, 6, soft * 0.5)
+
+## Two crescent halves — deer, moose, anything cloven.
+static func _build_hoof(st: SurfaceTool, soft: float) -> void:
+	for side in [-1.0, 1.0]:
+		_add_pad(st, Vector2(side * 0.17, 0.06), Vector2(0.17, 0.40), 12, soft)
+		_add_pad(st, Vector2(side * 0.20, -0.34), Vector2(0.10, 0.12), 8, soft)
+
+## Three toes forward, one back.
+static func _build_bird(st: SurfaceTool, track: TrackProfile, soft: float) -> void:
+	_add_pad(st, Vector2(0.0, -0.05), Vector2(0.10, 0.10), 8, soft)
+	for a in [-0.7, 0.0, 0.7]:
+		for step in 3:
+			var d := 0.14 + float(step) * 0.14
+			_add_pad(st, Vector2(sin(a) * d, cos(a) * d),
+				Vector2(0.055, 0.075) * track.toe_scale, 6, soft)
+	for step in 2:
+		var d := 0.14 + float(step) * 0.12
+		_add_pad(st, Vector2(0.0, -d - 0.05), Vector2(0.05, 0.07), 6, soft)
+
+## A flat elliptical pad, opaque at the centre and fading at the rim. `soft`
+## widens the fade, which is how a furred foot reads as indistinct.
+static func _add_pad(st: SurfaceTool, centre: Vector2, radius: Vector2,
+		segments: int, soft := 0.35) -> void:
 	var centre_col := Color(1, 1, 1, 1)
-	var rim_col := Color(1, 1, 1, 0.0)
+	var rim_col := Color(1, 1, 1, clampf(0.35 - soft * 0.35, 0.0, 0.35))
+	var r: Vector2 = radius * (1.0 + soft * 0.22)
 	for i in segments:
 		var a0 := TAU * float(i) / float(segments)
 		var a1 := TAU * float(i + 1) / float(segments)
-		var p0 := centre + Vector2(cos(a0) * radius.x, sin(a0) * radius.y)
-		var p1 := centre + Vector2(cos(a1) * radius.x, sin(a1) * radius.y)
+		var p0 := centre + Vector2(cos(a0) * r.x, sin(a0) * r.y)
+		var p1 := centre + Vector2(cos(a1) * r.x, sin(a1) * r.y)
 		# Wound so the face points up (+Y).
 		st.set_color(centre_col)
 		st.add_vertex(Vector3(centre.x, 0.0, -centre.y))
@@ -176,7 +252,7 @@ static func track_instance_color(record: EvidenceRecord) -> Color:
 ##
 ## Turn this down if spotting sign ever starts feeling too easy; it is the one
 ## dial for that, and it costs nothing to change.
-const TRACK_LEGIBILITY := 3.0
+const TRACK_LEGIBILITY := 3.8
 
 static func track_instance_size(record: EvidenceRecord) -> float:
 	var width_cm: float = float(record.truth.get("width_cm", 6.0))

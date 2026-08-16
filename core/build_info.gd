@@ -9,9 +9,9 @@ extends RefCounted
 ## Bump BUILD whenever you export. It is the one thing in the project that has
 ## to be updated by hand, and it is worth it.
 
-const BUILD := "m1.9"
+const BUILD := "m2.0"
 const BUILT := "2026-08-16"
-const NOTES := "prints drawn at 3x for legibility"
+const NOTES := "water in the creek, denser forest, per-species animals and prints"
 
 static func label() -> String:
 	return "build %s (%s)" % [BUILD, BUILT]

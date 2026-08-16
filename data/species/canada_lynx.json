@@ -33,6 +33,11 @@
     "toe_count": 4,
     "claw_marks": false,
     "gait": "direct register walk, often in its own older trail",
+    "foot_shape": "cat",
+    "heel_scale": 1.25,
+    "toe_scale": 0.78,
+    "toe_spread_deg": 66.0,
+    "edge_softness": 0.85,
     "clarity_bias": -0.28,
     "field_notes": "Very large and round for the size of the animal. Dense foot fur usually blurs the toe and pad outlines, so a lynx print often reads as a soft, indistinct circle rather than a crisp cat track. In soft snow the foot spreads even wider. Size is the strongest single clue; a clean, sharply defined print of this size is unusual and worth doubting."
   },
@@ -54,6 +59,11 @@
     "placeholder_color": [0.62, 0.60, 0.54],
     "body_length_m": 0.95,
     "shoulder_height_m": 0.60,
+    "ear_tuft_ratio": 0.3,
+    "tail_ratio": 0.16,
+    "face_ruff": 0.85,
+    "paw_scale": 1.9,
+    "coat_spotted": false,
     "visual_scene": ""
   }
 }

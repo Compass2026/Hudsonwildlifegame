@@ -109,6 +109,18 @@ func _is_satisfied(o: Dictionary) -> bool:
 		InvestigationData.ObjectiveType.PHOTOGRAPH:
 			return FieldNotebook.best_photo_quality() >= float(o.get("min_quality", 0.5))
 
+		InvestigationData.ObjectiveType.PHOTOGRAPH_SPECIES:
+			# Only a usable photograph of THIS animal counts. Photographing the
+			# common lookalike is still worth having — it goes in the notebook
+			# as evidence — but it does not finish the job. The game does not
+			# say which one you got; that is the player's to work out.
+			var want := StringName(o.get("species", ""))
+			var need := float(o.get("min_quality", 0.5))
+			for r in FieldNotebook.entries_of_kind(EvidenceKind.Type.PHOTOGRAPH):
+				if r.source_species_id == want and r.effective_quality() >= need:
+					return true
+			return false
+
 		InvestigationData.ObjectiveType.EVIDENCE_STRENGTH:
 			return FieldNotebook.case_strength() >= float(o.get("min", 1.0))
 

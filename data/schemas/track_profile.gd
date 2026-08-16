@@ -15,6 +15,25 @@ extends Resource
 @export var toe_count := 4
 @export var claw_marks := false
 @export var gait := "direct register walk"
+
+@export_group("Shape")
+## How the foot is built. Drives BOTH the drawn print and, later, anything else
+## that cares about foot structure. A new species picks a shape and the right
+## print appears — nobody writes a second track renderer.
+##   cat    — round, four toes in an arc, retractile claws that rarely show
+##   dog    — longer, more symmetrical, claws usually registering
+##   hoof   — two crescent halves
+##   bird   — three forward toes and a hallux
+@export var foot_shape := "cat"
+## Relative size of the heel/metatarsal pad against the toes. A lynx is nearly
+## all pad; a bobcat's toes take up more of the print.
+@export var heel_scale := 1.0
+@export var toe_scale := 1.0
+## How far the toes fan out, in degrees either side of centre.
+@export var toe_spread_deg := 58.0
+## 0 = crisp outline, 1 = soft and indistinct. Furred feet blur their own print,
+## which is why a lynx track is famously hard to read even in good ground.
+@export var edge_softness := 0.35
 ## Some species' prints are inherently indistinct (heavy foot fur, soft pads).
 ## Negative values blur the print regardless of ground conditions.
 @export var clarity_bias := 0.0

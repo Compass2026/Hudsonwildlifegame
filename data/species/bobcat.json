@@ -31,6 +31,11 @@
     "toe_count": 4,
     "claw_marks": false,
     "gait": "direct register walk",
+    "foot_shape": "cat",
+    "heel_scale": 0.88,
+    "toe_scale": 1.12,
+    "toe_spread_deg": 52.0,
+    "edge_softness": 0.18,
     "clarity_bias": 0.05,
     "field_notes": "Round, asymmetric, four toes, no claw marks. Usually crisper than a lynx print and roughly half the width. On soft or melting ground a bobcat track can spread and read larger than it is, which is the single most common source of false lynx reports."
   },
@@ -52,6 +57,11 @@
     "placeholder_color": [0.66, 0.47, 0.29],
     "body_length_m": 0.80,
     "shoulder_height_m": 0.45,
+    "ear_tuft_ratio": 0.09,
+    "tail_ratio": 0.34,
+    "face_ruff": 0.25,
+    "paw_scale": 0.95,
+    "coat_spotted": true,
     "visual_scene": ""
   }
 }

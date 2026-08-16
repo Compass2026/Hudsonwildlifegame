@@ -30,6 +30,36 @@ func _ready() -> void:
 		absf(EnvironmentSystem.height_at(-4.0, 3.0)
 			- EnvironmentSystem.height_at(4.0, -3.0)) < 0.35)
 
+	# --- There is water in the creek, and it can be seen ---------------------
+	# Two independent things have to hold, and only the first is obvious.
+	#
+	# 1. The surface must stand above the bed across its whole width. The bed
+	#    used to be carved by a term half the size of the terrain noise, so the
+	#    real low point wandered metres off the centre line and the water sat
+	#    above ground on one bank and under it on the other.
+	# 2. The surface must FACE UP. Godot's front face is the clockwise winding,
+	#    and the first version wound the other way: the mesh was in the scene
+	#    with a correct AABB and never drew a pixel from any angle a player can
+	#    stand at. Geometry checks all passed while the creek was bone dry.
+	var creek: MeshInstance3D = main.world.get_node_or_null("Creek")
+	_check("the creek has a water surface", creek != null and creek.mesh != null)
+
+	var submerged := 0
+	var stations := 0
+	for wz in [-80.0, -50.0, -18.0, 10.0, 30.0, 70.0]:
+		var wcx: float = main.world.creek_x(wz)
+		var surface: float = main.world._bed_level(wcx, wz)
+		for off in [-3.5, -2.0, 0.0, 2.0, 3.5]:
+			stations += 1
+			if EnvironmentSystem.height_at(wcx + off, wz) < surface:
+				submerged += 1
+	_check("the bed lies under the water across the channel (%d/%d)"
+		% [submerged, stations], submerged == stations)
+
+	_check("the water surface faces the same way as the ground it sits in",
+		creek != null and _mean_normal_y(creek.mesh)
+			* _mean_normal_y(main.world.get_node("TerrainMesh").mesh) > 0.0)
+
 	var animals := get_tree().get_nodes_in_group(&"animal")
 	_check("three animals were placed", animals.size() == 3)
 
@@ -102,7 +132,25 @@ func _ready() -> void:
 				% int(photos[0].effective_quality() * 100.0),
 				photos[0].effective_quality() > 0.0)
 
+		# The rare-animal objective must not be satisfiable by the common one.
+		var lynx_photo := false
+		for r in FieldNotebook.entries_of_kind(EvidenceKind.Type.PHOTOGRAPH):
+			if r.source_species_id == &"canada_lynx" and r.effective_quality() >= 0.45:
+				lynx_photo = true
+		var obj_done: bool = InvestigationSystem.objective_index > 2
+		_check("photographing the wrong cat does not finish the rare-animal objective",
+			lynx_photo or not obj_done)
+
 	main.player.camera_mode = false
+
+	# Each species draws a different print.
+	var lynx_mesh := PlaceholderFactory.track_mesh_for_profile(
+		SpeciesDB.get_species(&"canada_lynx").track)
+	var bobcat_mesh := PlaceholderFactory.track_mesh_for_profile(
+		SpeciesDB.get_species(&"bobcat").track)
+	_check("lynx and bobcat prints are different shapes",
+		lynx_mesh.get_faces().size() != bobcat_mesh.get_faces().size()
+			or lynx_mesh.get_aabb().size != bobcat_mesh.get_aabb().size)
 
 	# --- GPU budget ---------------------------------------------------------
 	# Browsers give up where the desktop shrugs, and they do it silently: the
@@ -150,6 +198,21 @@ func _ready() -> void:
 
 	print("\n%d passed, %d failed\n" % [_passed, _failed])
 	get_tree().quit(1 if _failed > 0 else 0)
+
+## Average Y of a surface's vertex normals. generate_normals() derives them from
+## the triangle winding, so this reports which way the faces point — comparing
+## the creek against the ground catches a flipped surface without needing to
+## know Godot's winding convention by heart.
+func _mean_normal_y(mesh: Mesh) -> float:
+	if mesh == null or mesh.get_surface_count() == 0:
+		return 0.0
+	var normals: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+	if normals.is_empty():
+		return 0.0
+	var total := 0.0
+	for n in normals:
+		total += n.y
+	return total / float(normals.size())
 
 func _count_gpu_resources(node: Node, meshes: Dictionary, materials: Dictionary,
 		instances: Array) -> void:
