@@ -11,7 +11,7 @@ config_version=5
 config/name="Hudson Wildlife"
 config/description="A wildlife field-research game: explore, observe, track, identify, document."
 run/main_scene="res://scenes/main.tscn"
-config/features=PackedStringArray("4.3")
+config/features=PackedStringArray("4.7")
 
 [autoload]
 
@@ -41,6 +41,13 @@ import/blender/enabled=false
 [physics]
 
 3d/default_gravity=18.0
+; Pinned rather than left implicit. Godot 4.6 made Jolt the default 3D physics
+; engine for NEWLY created projects; an existing project without this key keeps
+; resolving to "DEFAULT", which is GodotPhysics. Naming it means the engine we
+; are actually tuned against cannot change under us on a future upgrade.
+; Moving to Jolt is a deliberate decision, not an upgrade side effect — the
+; player's walk speed, step height and slope limits are all tuned to this one.
+3d/physics_engine="GodotPhysics"
 
 [rendering]
 

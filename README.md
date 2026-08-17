@@ -16,7 +16,7 @@ what is using that drainage.
 
 ## Running it
 
-1. Install **Godot 4.3 or newer** (standard build, not .NET) from
+1. Install **Godot 4.7.1 Standard** (not .NET/Mono) from
    <https://godotengine.org/download>.
 2. `git clone` this repository.
 3. Open the Godot project manager → **Import** → select `project.godot` → **Import & Edit**.
@@ -25,13 +25,28 @@ what is using that drainage.
 First import takes a moment while Godot builds its `.godot/` cache. That folder
 is gitignored.
 
-Verified on Godot 4.3 stable (Linux).
+**Godot 4.7.1 Standard is the development version.** The project was migrated
+from 4.3 and is verified on 4.7.1 stable (Linux), desktop and Web. Use 4.7.1 —
+opening it in an older editor will rewrite scenes and project settings into the
+older format. The Web export also needs the matching 4.7.1 export templates
+(**Editor → Manage Export Templates…**), because the template version and the
+editor version have to agree.
 
 ### Headless tests
 
 ```bash
 godot --headless --path . res://tests/test_runner.tscn   # gameplay rules
 godot --headless --path . res://tests/smoke_test.tscn    # boots the real scene
+```
+
+Headless never touches the GPU, so it cannot catch a rendering fault. For that
+there is a screenshot harness — see `tests/screenshot.gd` for the exact command:
+
+```bash
+xvfb-run -a -s "-screen 0 1280x720x24" \
+  env LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe \
+  godot --path . --rendering-driver opengl3 --resolution 1280x720 \
+    res://tests/screenshot.tscn
 ```
 
 Both exit non-zero on failure. `test_runner` runs the whole evidence and
@@ -65,12 +80,22 @@ because `index.html` revalidates while the pack does not, players end up running
 a *new page against an old pack*. That bit us for real: a build shipped, the
 page updated, and the game did not.
 
-`tools/export_web.sh` renames the pack, wasm and loader after the build
-(`hudson-m1.6.pck`, …) and repoints `index.html` at them, so a new build
-requests URLs the browser has never seen. Caching then cannot pin anyone to an
-old build. `web/vercel.json` also sets revalidating rather than `immutable`
-headers as a second line of defence — note it rejects unknown top-level keys, so
-there is nowhere in it to put a comment.
+`tools/export_web.sh` renames every file the export produced except the page and
+its icons (`hudson-m2.1.pck`, `hudson-m2.1.wasm`, …) and repoints `index.html`
+at them, so a new build requests URLs the browser has never seen. Caching then
+cannot pin anyone to an old build. `web/vercel.json` also sets revalidating
+rather than `immutable` headers as a second line of defence — note it rejects
+unknown top-level keys, so there is nowhere in it to put a comment.
+
+The rename is deliberately not a fixed list of extensions. The engine loads its
+sidecars through `locate_file("godot.<suffix>")`, which resolves to
+`<executable>.<suffix>`, so every one of them has to be renamed in step. Godot
+4.7 added `index.audio.position.worklet.js`, and the old hardcoded list left it
+behind: the engine then requested the versioned name and got a 404 that nothing
+reported. The script now renames everything and afterwards asserts that each
+`locate_file` name the loader references actually exists on disk, so a future
+engine version that adds another sidecar fails the build instead of shipping a
+missing file.
 
 The export preset is committed (`export_presets.cfg`). It uses the
 no-threads template, so the build needs no cross-origin isolation headers and

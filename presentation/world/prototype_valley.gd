@@ -504,8 +504,19 @@ func _build_sky() -> void:
 	e.tonemap_white = 4.0
 
 	e.fog_enabled = true
+	e.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	e.fog_density = 0.0022
 	e.fog_light_color = Color(0.56, 0.62, 0.68)
+	# Fog is for distance on the GROUND — it tells the player how far up the
+	# valley they can still read terrain. It must not eat the sky.
+	#
+	# fog_sky_affect defaults to 1.0, and the sky sits at infinite depth, so at
+	# full strength exponential fog saturates it completely: the gradient became
+	# one flat sheet of fog colour. Godot 4.3's Compatibility renderer did not
+	# apply fog to the sky at all, so this was invisible until the 4.7 upgrade
+	# turned it on and the sky went grey. Pinned rather than left to the default
+	# so the horizon cannot change again underneath us.
+	e.fog_sky_affect = 0.0
 	env.environment = e
 	add_child(env)
 

@@ -9,9 +9,9 @@ extends RefCounted
 ## Bump BUILD whenever you export. It is the one thing in the project that has
 ## to be updated by hand, and it is worth it.
 
-const BUILD := "m2.0"
-const BUILT := "2026-08-16"
-const NOTES := "water in the creek, denser forest, per-species animals and prints"
+const BUILD := "m2.1"
+const BUILT := "2026-08-17"
+const NOTES := "engine upgraded to Godot 4.7.1"
 
 static func label() -> String:
 	return "build %s (%s)" % [BUILD, BUILT]
